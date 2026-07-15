@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Court Session Management AI"
+version = "1.0.0"
+id = "artifacts/court-session-management"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18222
+
+[services.development]
+run = "pnpm --filter @workspace/court-session-management run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/court-session-management", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/court-session-management/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18222"
+BASE_PATH = "/"
