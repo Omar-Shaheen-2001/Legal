@@ -74,12 +74,15 @@ export const env = {
     return readEnv("GOOGLE_SHEET_NAME") ?? "Sessions";
   },
 
-  // --- OpenAI (AI extraction) ---
-  get openaiApiKey(): string {
+  // --- Hugging Face (AI extraction) ---
+  get hfApiToken(): string {
     return requireEnv(
-      "OPENAI_API_KEY",
-      "Add your OpenAI API key so the chat screen can extract session details.",
+      "HF_API_TOKEN",
+      "Add your Hugging Face API token (huggingface.co/settings/tokens) so the chat screen can extract session details.",
     );
+  },
+  get hfModel(): string {
+    return readEnv("HF_MODEL") ?? "Qwen/Qwen2.5-7B-Instruct";
   },
 
   // --- Scheduler ---
@@ -110,7 +113,7 @@ export function isAuthConfigured(): boolean {
   return Boolean(readEnv("APP_USERNAME") && readEnv("APP_PASSWORD"));
 }
 
-/** Returns true only if the OpenAI key is present, without throwing. */
+/** Returns true only if the Hugging Face token is present, without throwing. */
 export function isAiConfigured(): boolean {
-  return Boolean(readEnv("OPENAI_API_KEY"));
+  return Boolean(readEnv("HF_API_TOKEN"));
 }

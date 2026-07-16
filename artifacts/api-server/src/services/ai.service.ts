@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { HfInference } from "@huggingface/inference";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import {
@@ -6,15 +6,6 @@ import {
   buildExtractionUserPrompt,
 } from "../prompts/extraction.prompt";
 import type { SessionExtraction } from "@workspace/api-client-react";
-
-let client: OpenAI | null = null;
-
-function getClient(): OpenAI {
-  if (!client) {
-    client = new OpenAI({ apiKey: env.openaiApiKey });
-  }
-  return client;
-}
 
 const EXTRACTION_FIELDS = [
   "case_number",
@@ -37,52 +28,80 @@ export class AiExtractionError extends Error {
 }
 
 /**
- * Sends a raw court SMS message to OpenAI and returns the extracted,
- * structured hearing fields. Any field the model can't find comes back as
- * null (never invented, never omitted).
+ * Sends a raw court SMS message to Hugging Face Inference and returns the
+ * extracted, structured hearing fields. Any field the model can't find comes
+ * back as null (never invented, never omitted).
  */
 export async function analyzeCourtMessage(
   message: string,
 ): Promise<SessionExtraction> {
-  const openai = getClient();
+  const hf = new HfInference(env.hfApiToken);
+  const model = env.hfModel;
 
-  let completion;
+  let raw: string | undefined;
   try {
-    completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      temperature: 0,
-      response_format: { type: "json_object" },
+    const response = await hf.chatCompletion({
+      model,
       messages: [
         { role: "system", content: SESSION_EXTRACTION_SYSTEM_PROMPT },
         { role: "user", content: buildExtractionUserPrompt(message) },
       ],
+      parameters: {
+        temperature: 0.1,
+        max_new_tokens: 512,
+      },
+      response_format: { type: "json_object" },
     });
+    raw = response.choices[0]?.message?.content ?? undefined;
   } catch (err) {
-    logger.error({ err }, "OpenAI extraction request failed");
-    throw new AiExtractionError(
-      "Failed to reach the AI extraction service. Please try again.",
-    );
+    logger.error({ err }, "HuggingFace extraction request failed");
+    // Some deployments don't support response_format — retry without it
+    try {
+      logger.warn("Retrying without response_format constraint");
+      const hf2 = new HfInference(env.hfApiToken);
+      const response2 = await hf2.chatCompletion({
+        model,
+        messages: [
+          { role: "system", content: SESSION_EXTRACTION_SYSTEM_PROMPT },
+          { role: "user", content: buildExtractionUserPrompt(message) },
+        ],
+        parameters: {
+          temperature: 0.1,
+          max_new_tokens: 512,
+        },
+      });
+      raw = response2.choices[0]?.message?.content ?? undefined;
+    } catch (err2) {
+      logger.error({ err2 }, "HuggingFace extraction retry also failed");
+      throw new AiExtractionError(
+        "تعذّر الوصول إلى خدمة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+      );
+    }
   }
 
-  const content = completion.choices[0]?.message?.content;
-  if (!content) {
-    throw new AiExtractionError("The AI extraction service returned no content.");
+  if (!raw) {
+    throw new AiExtractionError("لم يُرجع نموذج الذكاء الاصطناعي أي محتوى.");
   }
+
+  // Extract JSON block from response (model may wrap it in markdown fences)
+  const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) ?? null;
+  const jsonStr = jsonMatch ? jsonMatch[1].trim() : raw.trim();
 
   let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(content) as Record<string, unknown>;
+    parsed = JSON.parse(jsonStr) as Record<string, unknown>;
   } catch {
-    logger.error({ content }, "AI extraction returned non-JSON content");
+    logger.error({ raw }, "AI extraction returned non-JSON content");
     throw new AiExtractionError(
-      "The AI extraction service returned an invalid response.",
+      "أرجع النموذج استجابةً غير صالحة. يرجى المحاولة مرة أخرى.",
     );
   }
 
   const result = {} as SessionExtraction;
   for (const field of EXTRACTION_FIELDS) {
     const value = parsed[field];
-    result[field] = typeof value === "string" && value.trim() !== "" ? value : null;
+    result[field] =
+      typeof value === "string" && value.trim() !== "" ? value : null;
   }
   return result;
 }
