@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
 import { Calendar, Filter } from 'lucide-react';
+import { TimeRemainingBadge } from '@/components/time-remaining';
 
 const statusOptions: { value: SessionStatus | 'all'; label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }[] = [
   { value: 'all', label: 'الكل', variant: 'outline' },
@@ -140,6 +141,9 @@ export default function SessionsPage() {
                         )}
                       </div>
                     )}
+                    <div>
+                      <TimeRemainingBadge hearingAt={session.hearingAt} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

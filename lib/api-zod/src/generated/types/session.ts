@@ -34,4 +34,9 @@ export interface Session {
   reminder24: boolean;
   reminder6: boolean;
   createdAt: Date;
+  /**
+     * Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.
+     * @nullable
+     */
+  hearingAt: Date | null;
 }

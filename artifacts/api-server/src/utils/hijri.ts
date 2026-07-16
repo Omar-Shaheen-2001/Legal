@@ -112,6 +112,71 @@ export function hijriToGregorian(hijri: HijriDate): {
   return julianDayNumberToGregorian(hijriToJulianDayNumber(hijri));
 }
 
+/** Converts a proleptic Gregorian calendar date to a Julian Day Number. */
+function gregorianToJulianDayNumber(
+  year: number,
+  month: number,
+  day: number,
+): number {
+  const a = Math.floor((14 - month) / 12);
+  const y = year + 4800 - a;
+  const m = month + 12 * a - 3;
+  return (
+    day +
+    Math.floor((153 * m + 2) / 5) +
+    365 * y +
+    Math.floor(y / 4) -
+    Math.floor(y / 100) +
+    Math.floor(y / 400) -
+    32045
+  );
+}
+
+/** Converts a Julian Day Number to a Hijri (tabular/civil) date. */
+function julianDayNumberToHijri(jdn: number): HijriDate {
+  let l = jdn - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  l = l - 10631 * n + 354;
+  const j =
+    Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) +
+    Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
+  l =
+    l -
+    Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
+    Math.floor(j / 16) * Math.floor((15238 * j) / 43) +
+    29;
+  const year = 30 * n + j - 30;
+  const month = Math.floor((24 * l) / 709);
+  const day = l - Math.floor((709 * month) / 24);
+  return { year, month, day };
+}
+
+/**
+ * Converts a Gregorian Date object to the corresponding Hijri (tabular/civil)
+ * calendar date. Uses UTC date components to avoid timezone issues.
+ */
+export function gregorianToHijri(date: Date): HijriDate {
+  const jdn = gregorianToJulianDayNumber(
+    date.getUTCFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate(),
+  );
+  return julianDayNumberToHijri(jdn);
+}
+
+/**
+ * Returns the current date as a Hijri date string "DD/MM/YYYY" using the
+ * court's configured timezone offset (default Asia/Riyadh UTC+3).
+ */
+export function currentHijriDateString(): string {
+  const offsetHours = env.courtTimezoneOffsetHours;
+  const localNow = new Date(Date.now() + offsetHours * 3600 * 1000);
+  const h = gregorianToHijri(localNow);
+  const dd = String(h.day).padStart(2, "0");
+  const mm = String(h.month).padStart(2, "0");
+  return `${dd}/${mm}/${h.year}`;
+}
+
 /**
  * Combines a Hijri date string and an Arabic/English time string into a
  * concrete UTC `Date` representing the hearing instant, assuming the court's

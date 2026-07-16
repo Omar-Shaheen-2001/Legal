@@ -418,6 +418,7 @@ components:
           reminder24,
           reminder6,
           createdAt,
+          hearingAt,
         ]
       properties:
         id:
@@ -452,3 +453,7 @@ components:
         createdAt:
           type: string
           format: date-time
+        hearingAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.

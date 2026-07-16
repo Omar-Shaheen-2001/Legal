@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { ArrowRight, Save, Trash2 } from 'lucide-react';
+import { TimeRemainingCard } from '@/components/time-remaining';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -190,6 +191,8 @@ export default function SessionDetailPage() {
           تاريخ الإنشاء: {new Date(session.createdAt).toLocaleDateString('ar-SA')}
         </p>
       </div>
+
+      <TimeRemainingCard hearingAt={session.hearingAt} />
 
       <Card>
         <CardHeader>

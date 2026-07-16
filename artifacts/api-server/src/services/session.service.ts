@@ -25,6 +25,9 @@ function nullableString(value: string): string | null {
 }
 
 function rowToSession(id: number, row: SheetRow): Session {
+  const sessionDateHijri = nullableString(cell(row, "Session Date Hijri"));
+  const sessionTime = nullableString(cell(row, "Session Time"));
+  const hearingDate = computeHearingDateTime(sessionDateHijri, sessionTime);
   return {
     id,
     caseNumber: nullableString(cell(row, "Case Number")),
@@ -34,13 +37,14 @@ function rowToSession(id: number, row: SheetRow): Session {
     courtCircuit: nullableString(cell(row, "Court Circuit")),
     caseSubject: nullableString(cell(row, "Case Subject")),
     sessionType: nullableString(cell(row, "Session Type")),
-    sessionDateHijri: nullableString(cell(row, "Session Date Hijri")),
-    sessionTime: nullableString(cell(row, "Session Time")),
+    sessionDateHijri,
+    sessionTime,
     notes: nullableString(cell(row, "Notes")),
     status: (cell(row, "Status") || "Upcoming") as SessionStatus,
     reminder24: cell(row, "Reminder24") === "true",
     reminder6: cell(row, "Reminder6") === "true",
     createdAt: cell(row, "Created At") || new Date().toISOString(),
+    hearingAt: hearingDate ? hearingDate.toISOString() : null,
   };
 }
 
