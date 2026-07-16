@@ -24,8 +24,8 @@ export default function ChatPage() {
   const handleAnalyze = () => {
     if (!message.trim()) {
       toast({
-        title: 'Error',
-        description: 'Please enter a message to analyze',
+        title: 'تنبيه',
+        description: 'يرجى إدخال نص الرسالة أولاً',
         variant: 'destructive',
       });
       return;
@@ -49,14 +49,14 @@ export default function ChatPage() {
             notes: data.notes || '',
           });
           toast({
-            title: 'Analysis Complete',
-            description: 'Fields extracted successfully. Review and save below.',
+            title: 'تم التحليل بنجاح',
+            description: 'تم استخراج البيانات. راجعها وعدّلها قبل الحفظ.',
           });
         },
         onError: (error: any) => {
           toast({
-            title: 'Analysis Failed',
-            description: error?.message || 'Failed to analyze message',
+            title: 'فشل التحليل',
+            description: error?.message || 'تعذّر تحليل الرسالة، حاول مرة أخرى',
             variant: 'destructive',
           });
         },
@@ -72,8 +72,8 @@ export default function ChatPage() {
           queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
           toast({
-            title: 'Session Saved',
-            description: 'Court session has been saved successfully',
+            title: 'تم الحفظ',
+            description: 'تم حفظ جلسة المحكمة بنجاح',
           });
           setMessage('');
           setExtractedData(null);
@@ -82,8 +82,8 @@ export default function ChatPage() {
         },
         onError: (error: any) => {
           toast({
-            title: 'Save Failed',
-            description: error?.message || 'Failed to save session',
+            title: 'فشل الحفظ',
+            description: error?.message || 'تعذّر حفظ الجلسة',
             variant: 'destructive',
           });
         },
@@ -104,27 +104,28 @@ export default function ChatPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analyze Court Message</h1>
+        <h1 className="text-3xl font-bold tracking-tight">تحليل رسالة المحكمة</h1>
         <p className="text-muted-foreground mt-1">
-          Paste a court SMS message to extract session details automatically
+          الصق نص رسالة الجلسة لاستخراج البيانات تلقائياً بالذكاء الاصطناعي
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>SMS Message</CardTitle>
+          <CardTitle>نص الرسالة</CardTitle>
           <CardDescription>
-            Paste the raw court hearing notification text below
+            الصق نص إشعار الجلسة الواردة من المحكمة
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Textarea
-            placeholder="Paste court SMS message here..."
+            placeholder="الصق نص رسالة المحكمة هنا..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={6}
             disabled={analyzeMutation.isPending}
-            className="font-mono text-sm resize-none"
+            className="text-base resize-none leading-relaxed"
+            dir="auto"
             data-testid="textarea-message"
           />
           <div className="flex gap-2">
@@ -135,7 +136,7 @@ export default function ChatPage() {
               data-testid="button-analyze"
             >
               <Sparkles className="w-4 h-4" />
-              {analyzeMutation.isPending ? 'Analyzing...' : 'Analyze with AI'}
+              {analyzeMutation.isPending ? 'جارٍ التحليل...' : 'تحليل بالذكاء الاصطناعي'}
             </Button>
             {extractedData && (
               <Button
@@ -145,7 +146,7 @@ export default function ChatPage() {
                 data-testid="button-reset"
               >
                 <RotateCcw className="w-4 h-4" />
-                Reset
+                إعادة تعيين
               </Button>
             )}
           </div>
@@ -155,112 +156,109 @@ export default function ChatPage() {
       {extractedData && (
         <Card className="border-primary/50 shadow-lg animate-in fade-in-50 slide-in-from-bottom-2">
           <CardHeader>
-            <CardTitle>Extracted Information</CardTitle>
+            <CardTitle>البيانات المستخرجة</CardTitle>
             <CardDescription>
-              Review and edit the extracted fields before saving
+              راجع الحقول وعدّلها إن لزم قبل الحفظ
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="caseNumber">Case Number</Label>
+                <Label htmlFor="caseNumber">رقم القضية</Label>
                 <Input
                   id="caseNumber"
                   value={formData.caseNumber || ''}
                   onChange={(e) => updateField('caseNumber', e.target.value)}
                   className="font-mono"
+                  dir="ltr"
                   data-testid="input-caseNumber"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="court">Court</Label>
+                <Label htmlFor="court">المحكمة</Label>
                 <Input
                   id="court"
                   value={formData.court || ''}
                   onChange={(e) => updateField('court', e.target.value)}
-                  className="rtl-text"
                   data-testid="input-court"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="plaintiff">Plaintiff</Label>
+                <Label htmlFor="plaintiff">المدّعي</Label>
                 <Input
                   id="plaintiff"
                   value={formData.plaintiff || ''}
                   onChange={(e) => updateField('plaintiff', e.target.value)}
-                  className="rtl-text"
                   data-testid="input-plaintiff"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="defendant">Defendant</Label>
+                <Label htmlFor="defendant">المدّعى عليه</Label>
                 <Input
                   id="defendant"
                   value={formData.defendant || ''}
                   onChange={(e) => updateField('defendant', e.target.value)}
-                  className="rtl-text"
                   data-testid="input-defendant"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="courtCircuit">Court Circuit</Label>
+                <Label htmlFor="courtCircuit">الدائرة القضائية</Label>
                 <Input
                   id="courtCircuit"
                   value={formData.courtCircuit || ''}
                   onChange={(e) => updateField('courtCircuit', e.target.value)}
-                  className="rtl-text"
                   data-testid="input-courtCircuit"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="caseSubject">Case Subject</Label>
+                <Label htmlFor="caseSubject">موضوع القضية</Label>
                 <Input
                   id="caseSubject"
                   value={formData.caseSubject || ''}
                   onChange={(e) => updateField('caseSubject', e.target.value)}
-                  className="rtl-text"
                   data-testid="input-caseSubject"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sessionType">Session Type</Label>
+                <Label htmlFor="sessionType">نوع الجلسة</Label>
                 <Input
                   id="sessionType"
                   value={formData.sessionType || ''}
                   onChange={(e) => updateField('sessionType', e.target.value)}
-                  className="rtl-text"
                   data-testid="input-sessionType"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sessionDateHijri">Session Date (Hijri)</Label>
+                <Label htmlFor="sessionDateHijri">تاريخ الجلسة (هجري)</Label>
                 <Input
                   id="sessionDateHijri"
                   value={formData.sessionDateHijri || ''}
                   onChange={(e) => updateField('sessionDateHijri', e.target.value)}
                   className="font-mono"
+                  dir="ltr"
                   data-testid="input-sessionDateHijri"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="sessionTime">Session Time</Label>
+                <Label htmlFor="sessionTime">وقت الجلسة</Label>
                 <Input
                   id="sessionTime"
                   value={formData.sessionTime || ''}
                   onChange={(e) => updateField('sessionTime', e.target.value)}
                   className="font-mono"
+                  dir="auto"
                   data-testid="input-sessionTime"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">ملاحظات</Label>
               <Textarea
                 id="notes"
                 value={formData.notes || ''}
                 onChange={(e) => updateField('notes', e.target.value)}
                 rows={3}
-                className="rtl-text"
+                dir="auto"
                 data-testid="textarea-notes"
               />
             </div>
@@ -271,7 +269,7 @@ export default function ChatPage() {
               data-testid="button-save"
             >
               <Save className="w-4 h-4" />
-              {createMutation.isPending ? 'Saving...' : 'Save Session'}
+              {createMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ الجلسة'}
             </Button>
           </CardContent>
         </Card>

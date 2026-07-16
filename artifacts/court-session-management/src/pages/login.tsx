@@ -17,17 +17,17 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     loginMutation.mutate(
       { data: { username, password } },
       {
         onSuccess: () => {
           setLocation('/');
         },
-        onError: (error: any) => {
+        onError: () => {
           toast({
-            title: 'Login Failed',
-            description: error?.message || 'Invalid credentials',
+            title: 'فشل تسجيل الدخول',
+            description: 'اسم المستخدم أو كلمة المرور غير صحيحة',
             variant: 'destructive',
           });
         },
@@ -42,36 +42,38 @@ export default function LoginPage() {
           <div className="mx-auto w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
             <Scale className="w-7 h-7 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">Court Session Manager</CardTitle>
+          <CardTitle className="text-2xl font-bold">نظام إدارة جلسات المحكمة</CardTitle>
           <CardDescription>
-            Sign in to access the legal secretary portal
+            سجّل دخولك للوصول إلى بوابة السكرتير القانوني
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">اسم المستخدم</Label>
               <Input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="أدخل اسم المستخدم"
                 required
                 disabled={loginMutation.isPending}
+                autoComplete="username"
                 data-testid="input-username"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">كلمة المرور</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="أدخل كلمة المرور"
                 required
                 disabled={loginMutation.isPending}
+                autoComplete="current-password"
                 data-testid="input-password"
               />
             </div>
@@ -81,7 +83,7 @@ export default function LoginPage() {
               disabled={loginMutation.isPending}
               data-testid="button-login"
             >
-              {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+              {loginMutation.isPending ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول'}
             </Button>
           </form>
         </CardContent>

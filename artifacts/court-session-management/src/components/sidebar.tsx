@@ -7,9 +7,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
 const navigation = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Analyze Message', path: '/chat', icon: MessageSquare },
-  { name: 'All Sessions', path: '/sessions', icon: Calendar },
+  { name: 'لوحة التحكم', path: '/', icon: LayoutDashboard },
+  { name: 'تحليل رسالة', path: '/chat', icon: MessageSquare },
+  { name: 'جميع الجلسات', path: '/sessions', icon: Calendar },
 ];
 
 export function Sidebar() {
@@ -27,8 +27,8 @@ export function Sidebar() {
       },
       onError: () => {
         toast({
-          title: 'Error',
-          description: 'Failed to log out',
+          title: 'خطأ',
+          description: 'فشل تسجيل الخروج',
           variant: 'destructive',
         });
       },
@@ -36,12 +36,12 @@ export function Sidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-sidebar border-r border-sidebar-border">
+    <div className="flex flex-col h-full bg-sidebar border-s border-sidebar-border">
       <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-lg font-semibold text-sidebar-foreground">
-          Court Session Manager
+        <h1 className="text-lg font-semibold text-sidebar-foreground leading-snug">
+          إدارة جلسات المحكمة
         </h1>
-        <p className="text-xs text-muted-foreground mt-1">Legal Secretary Portal</p>
+        <p className="text-xs text-muted-foreground mt-1">بوابة السكرتير القانوني</p>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
@@ -59,7 +59,7 @@ export function Sidebar() {
               }`}
               data-testid={`nav-${item.path === '/' ? 'dashboard' : item.path.slice(1)}`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 shrink-0" />
               {item.name}
             </Link>
           );
@@ -77,12 +77,12 @@ export function Sidebar() {
           {theme === 'light' ? (
             <>
               <Moon className="w-4 h-4" />
-              Dark Mode
+              الوضع الداكن
             </>
           ) : (
             <>
               <Sun className="w-4 h-4" />
-              Light Mode
+              الوضع الفاتح
             </>
           )}
         </Button>
@@ -95,7 +95,7 @@ export function Sidebar() {
           data-testid="button-logout"
         >
           <LogOut className="w-4 h-4" />
-          {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+          {logoutMutation.isPending ? 'جارٍ الخروج...' : 'تسجيل الخروج'}
         </Button>
       </div>
     </div>

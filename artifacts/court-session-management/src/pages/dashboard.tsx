@@ -6,28 +6,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 const stats = [
   {
     key: 'totalCases',
-    label: 'Total Cases',
+    label: 'إجمالي القضايا',
     icon: Briefcase,
     color: 'text-chart-1',
     bgColor: 'bg-chart-1/10',
   },
   {
     key: 'todayHearings',
-    label: "Today's Hearings",
+    label: 'جلسات اليوم',
     icon: Calendar,
     color: 'text-chart-2',
     bgColor: 'bg-chart-2/10',
   },
   {
     key: 'upcomingHearings',
-    label: 'Upcoming Hearings',
+    label: 'جلسات قادمة',
     icon: Clock,
     color: 'text-chart-3',
     bgColor: 'bg-chart-3/10',
   },
   {
     key: 'finishedHearings',
-    label: 'Finished Hearings',
+    label: 'جلسات منتهية',
     icon: CheckCircle2,
     color: 'text-chart-4',
     bgColor: 'bg-chart-4/10',
@@ -41,7 +41,7 @@ export default function DashboardPage() {
     return (
       <div className="p-8">
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">Failed to load dashboard statistics</p>
+          <p className="text-sm text-destructive">فشل تحميل إحصائيات لوحة التحكم</p>
         </div>
       </div>
     );
@@ -50,9 +50,9 @@ export default function DashboardPage() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">لوحة التحكم</h1>
         <p className="text-muted-foreground mt-1">
-          Overview of court session activities
+          نظرة عامة على نشاط جلسات المحكمة
         </p>
       </div>
 
@@ -87,7 +87,7 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle>إجراءات سريعة</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <a
@@ -95,13 +95,13 @@ export default function DashboardPage() {
             className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all group"
             data-testid="link-analyze-message"
           >
-            <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center group-hover:bg-primary/20 transition-colors shrink-0">
               <Calendar className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <div className="font-medium">Analyze New Message</div>
+              <div className="font-medium">تحليل رسالة جديدة</div>
               <div className="text-sm text-muted-foreground">
-                Extract hearing details from SMS
+                استخراج تفاصيل الجلسة من الرسالة النصية
               </div>
             </div>
           </a>
@@ -110,13 +110,13 @@ export default function DashboardPage() {
             className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all group"
             data-testid="link-view-sessions"
           >
-            <div className="w-10 h-10 bg-accent/20 rounded-md flex items-center justify-center group-hover:bg-accent/30 transition-colors">
+            <div className="w-10 h-10 bg-accent/20 rounded-md flex items-center justify-center group-hover:bg-accent/30 transition-colors shrink-0">
               <Briefcase className="w-5 h-5 text-accent-foreground" />
             </div>
             <div>
-              <div className="font-medium">View All Sessions</div>
+              <div className="font-medium">عرض جميع الجلسات</div>
               <div className="text-sm text-muted-foreground">
-                Browse and manage hearings
+                تصفّح وإدارة جلسات الاستماع
               </div>
             </div>
           </a>

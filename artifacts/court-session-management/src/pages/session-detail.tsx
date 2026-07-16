@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowRight, Save, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,15 +31,22 @@ import {
 } from '@/components/ui/select';
 import { useQueryClient } from '@tanstack/react-query';
 
+const statusLabelMap: Record<SessionStatus, string> = {
+  Today: 'اليوم',
+  Upcoming: 'قادمة',
+  Finished: 'منتهية',
+  Cancelled: 'ملغية',
+};
+
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const sessionId = Number(params.id);
   const { data: session, isLoading, error } = useGetSession(sessionId);
-  
+
   const [formData, setFormData] = useState<any>({});
   const updateMutation = useUpdateSession();
   const deleteMutation = useDeleteSession();
@@ -75,14 +82,14 @@ export default function SessionDetailPage() {
           queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
           toast({
-            title: 'Changes Saved',
-            description: 'Session updated successfully',
+            title: 'تم الحفظ',
+            description: 'تم تحديث الجلسة بنجاح',
           });
         },
         onError: (error: any) => {
           toast({
-            title: 'Save Failed',
-            description: error?.message || 'Failed to update session',
+            title: 'فشل الحفظ',
+            description: error?.message || 'تعذّر تحديث الجلسة',
             variant: 'destructive',
           });
         },
@@ -98,15 +105,15 @@ export default function SessionDetailPage() {
           queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
           toast({
-            title: 'Session Deleted',
-            description: 'Session has been removed',
+            title: 'تم الحذف',
+            description: 'تم حذف الجلسة بنجاح',
           });
           setLocation('/sessions');
         },
         onError: (error: any) => {
           toast({
-            title: 'Delete Failed',
-            description: error?.message || 'Failed to delete session',
+            title: 'فشل الحذف',
+            description: error?.message || 'تعذّر حذف الجلسة',
             variant: 'destructive',
           });
         },
@@ -118,11 +125,11 @@ export default function SessionDetailPage() {
     return (
       <div className="p-8">
         <Button variant="ghost" onClick={() => setLocation('/sessions')} className="mb-4 gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Sessions
+          <ArrowRight className="w-4 h-4" />
+          العودة إلى الجلسات
         </Button>
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">Failed to load session details</p>
+          <p className="text-sm text-destructive">فشل تحميل تفاصيل الجلسة</p>
         </div>
       </div>
     );
@@ -146,9 +153,7 @@ export default function SessionDetailPage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
@@ -159,41 +164,52 @@ export default function SessionDetailPage() {
           className="gap-2"
           data-testid="button-back"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Sessions
+          <ArrowRight className="w-4 h-4" />
+          العودة إلى الجلسات
         </Button>
-        <Badge variant={session.status === 'Today' ? 'default' : session.status === 'Upcoming' ? 'secondary' : session.status === 'Cancelled' ? 'destructive' : 'outline'}>
-          {session.status}
+        <Badge
+          variant={
+            session.status === 'Today'
+              ? 'default'
+              : session.status === 'Upcoming'
+              ? 'secondary'
+              : session.status === 'Cancelled'
+              ? 'destructive'
+              : 'outline'
+          }
+        >
+          {statusLabelMap[session.status]}
         </Badge>
       </div>
 
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-mono">
-          {session.caseNumber || 'Session Details'}
+          {session.caseNumber || 'تفاصيل الجلسة'}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Created on {new Date(session.createdAt).toLocaleDateString()}
+          تاريخ الإنشاء: {new Date(session.createdAt).toLocaleDateString('ar-SA')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Session Information</CardTitle>
+          <CardTitle>بيانات الجلسة</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="caseNumber">Case Number</Label>
+              <Label htmlFor="caseNumber">رقم القضية</Label>
               <Input
                 id="caseNumber"
                 value={formData.caseNumber || ''}
                 onChange={(e) => updateField('caseNumber', e.target.value)}
                 className="font-mono"
+                dir="ltr"
                 data-testid="input-caseNumber"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">الحالة</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => updateField('status', value)}
@@ -202,102 +218,98 @@ export default function SessionDetailPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Upcoming">Upcoming</SelectItem>
-                  <SelectItem value="Today">Today</SelectItem>
-                  <SelectItem value="Finished">Finished</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  <SelectItem value="Upcoming">قادمة</SelectItem>
+                  <SelectItem value="Today">اليوم</SelectItem>
+                  <SelectItem value="Finished">منتهية</SelectItem>
+                  <SelectItem value="Cancelled">ملغية</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="plaintiff">Plaintiff</Label>
+              <Label htmlFor="plaintiff">المدّعي</Label>
               <Input
                 id="plaintiff"
                 value={formData.plaintiff || ''}
                 onChange={(e) => updateField('plaintiff', e.target.value)}
-                className="rtl-text"
                 data-testid="input-plaintiff"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="defendant">Defendant</Label>
+              <Label htmlFor="defendant">المدّعى عليه</Label>
               <Input
                 id="defendant"
                 value={formData.defendant || ''}
                 onChange={(e) => updateField('defendant', e.target.value)}
-                className="rtl-text"
                 data-testid="input-defendant"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="court">Court</Label>
+              <Label htmlFor="court">المحكمة</Label>
               <Input
                 id="court"
                 value={formData.court || ''}
                 onChange={(e) => updateField('court', e.target.value)}
-                className="rtl-text"
                 data-testid="input-court"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="courtCircuit">Court Circuit</Label>
+              <Label htmlFor="courtCircuit">الدائرة القضائية</Label>
               <Input
                 id="courtCircuit"
                 value={formData.courtCircuit || ''}
                 onChange={(e) => updateField('courtCircuit', e.target.value)}
-                className="rtl-text"
                 data-testid="input-courtCircuit"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="caseSubject">Case Subject</Label>
+              <Label htmlFor="caseSubject">موضوع القضية</Label>
               <Input
                 id="caseSubject"
                 value={formData.caseSubject || ''}
                 onChange={(e) => updateField('caseSubject', e.target.value)}
-                className="rtl-text"
                 data-testid="input-caseSubject"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sessionType">Session Type</Label>
+              <Label htmlFor="sessionType">نوع الجلسة</Label>
               <Input
                 id="sessionType"
                 value={formData.sessionType || ''}
                 onChange={(e) => updateField('sessionType', e.target.value)}
-                className="rtl-text"
                 data-testid="input-sessionType"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sessionDateHijri">Session Date (Hijri)</Label>
+              <Label htmlFor="sessionDateHijri">تاريخ الجلسة (هجري)</Label>
               <Input
                 id="sessionDateHijri"
                 value={formData.sessionDateHijri || ''}
                 onChange={(e) => updateField('sessionDateHijri', e.target.value)}
                 className="font-mono"
+                dir="ltr"
                 data-testid="input-sessionDateHijri"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sessionTime">Session Time</Label>
+              <Label htmlFor="sessionTime">وقت الجلسة</Label>
               <Input
                 id="sessionTime"
                 value={formData.sessionTime || ''}
                 onChange={(e) => updateField('sessionTime', e.target.value)}
                 className="font-mono"
+                dir="auto"
                 data-testid="input-sessionTime"
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">ملاحظات</Label>
             <Textarea
               id="notes"
               value={formData.notes || ''}
               onChange={(e) => updateField('notes', e.target.value)}
               rows={4}
-              className="rtl-text"
+              dir="auto"
               data-testid="textarea-notes"
             />
           </div>
@@ -312,7 +324,7 @@ export default function SessionDetailPage() {
           data-testid="button-save"
         >
           <Save className="w-4 h-4" />
-          {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+          {updateMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -323,20 +335,20 @@ export default function SessionDetailPage() {
               data-testid="button-delete"
             >
               <Trash2 className="w-4 h-4" />
-              Delete
+              حذف
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Session</AlertDialogTitle>
+              <AlertDialogTitle>حذف الجلسة</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this session? This action cannot be undone.
+                هل أنت متأكد من حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+              <AlertDialogCancel data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete} data-testid="button-confirm-delete">
-                Delete
+                تأكيد الحذف
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

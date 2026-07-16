@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
 
 function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[100dvh] overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden flex-row-reverse">
       <aside className="w-64 flex-shrink-0 hidden md:block">
         <Sidebar />
       </aside>
