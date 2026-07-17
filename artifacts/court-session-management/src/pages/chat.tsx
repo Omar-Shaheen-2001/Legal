@@ -5,8 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, Save, RotateCcw } from 'lucide-react';
+import { Sparkles, Save, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 
@@ -154,11 +155,20 @@ export default function ChatPage() {
       </Card>
 
       {extractedData && (
+        <Alert className="border-green-500/60 bg-green-50 dark:bg-green-950/30 animate-in fade-in-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800 dark:text-green-300 font-medium">
+            ✅ تم استخراج البيانات — راجع الحقول أدناه ثم اضغط <strong>"حفظ الجلسة في Google Sheets"</strong> لحفظها
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {extractedData && (
         <Card className="border-primary/50 shadow-lg animate-in fade-in-50 slide-in-from-bottom-2">
           <CardHeader>
             <CardTitle>البيانات المستخرجة</CardTitle>
             <CardDescription>
-              راجع الحقول وعدّلها إن لزم قبل الحفظ
+              راجع الحقول وعدّلها إن لزم، ثم اضغط زر الحفظ في الأسفل
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -265,11 +275,12 @@ export default function ChatPage() {
             <Button
               onClick={handleSave}
               disabled={createMutation.isPending}
-              className="w-full gap-2"
+              size="lg"
+              className="w-full gap-2 text-base font-bold h-14"
               data-testid="button-save"
             >
-              <Save className="w-4 h-4" />
-              {createMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ الجلسة'}
+              <Save className="w-5 h-5" />
+              {createMutation.isPending ? 'جارٍ الحفظ في Google Sheets...' : '⬆️ حفظ الجلسة في Google Sheets'}
             </Button>
           </CardContent>
         </Card>
