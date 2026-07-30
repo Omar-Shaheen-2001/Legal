@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/court-session-management build",
-  "outputDirectory": "artifacts/court-session-management/dist",
+  "buildCommand": "pnpm --filter @workspace/court-session-management build && node -e \"const fs=require('fs'); fs.cpSync('artifacts/court-session-management/dist', 'dist', {recursive: true});\"",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/(.*)",
