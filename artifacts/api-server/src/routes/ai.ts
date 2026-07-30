@@ -1,16 +1,19 @@
 import { Router, type IRouter } from "express";
 import { AnalyzeMessageBody, AnalyzeMessageResponse } from "@workspace/api-zod";
 import { analyzeCourtMessage, AiExtractionError } from "../services/ai.service";
-import { isAiConfigured } from "../config/env";
 import { logger } from "../lib/logger";
 import { attachAuthUser, requireAuth } from "../middlewares/auth.middleware";
+
+import { getSettings } from "../config/settings-store";
 
 const router: IRouter = Router();
 
 router.post("/ai/analyze", attachAuthUser, requireAuth, async (req, res) => {
-  if (!isAiConfigured()) {
+  const settings = getSettings();
+  const token = settings.hfApiToken;
+  if (!token) {
     res.status(500).json({
-      error: "AI extraction is not configured yet. Set OPENAI_API_KEY.",
+      error: "Hugging Face Access Token is not configured. Please set it in Settings.",
     });
     return;
   }

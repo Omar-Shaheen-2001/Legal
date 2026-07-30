@@ -9,19 +9,65 @@ import {
   updateRowCells,
   type SheetRow,
 } from "./googleSheets.service";
-import { computeHearingDateTime } from "../utils/hijri";
+import { computeHearingDateTime, parseHijriDateString, hijriToGregorian } from "../utils/hijri";
+import { logger } from "../lib/logger";
 
-const COLUMN_INDEX: Record<string, number> = SHEET_COLUMNS.reduce(
-  (acc, col, i) => ({ ...acc, [col]: i }),
-  {} as Record<string, number>,
-);
+const COLUMN_INDEX: Record<string, number> = {
+  // Arabic headers
+  "رقم القضية": 0,
+  "المدعي": 1,
+  "المدعى عليه": 2,
+  "المحكمة": 3,
+  "الدائرة القضائية": 4,
+  "موضوع القضية": 5,
+  "نوع الجلسة": 6,
+  "تاريخ الجلسة هجري": 7,
+  "يوم الجلسة": 8,
+  "وقت الجلسة": 9,
+  "الأيام المتبقية": 10,
+  "ملاحظات": 11,
+  "حالة الجلسة": 12,
+  "تذكير 24 ساعة": 13,
+  "تذكير 6 ساعات": 14,
+  "تاريخ الإنشاء": 15,
+  "التقرير": 16,
 
-function cell(row: SheetRow, name: (typeof SHEET_COLUMNS)[number]): string {
-  return row[COLUMN_INDEX[name]] ?? "";
+  // English header aliases
+  "Case Number": 0,
+  "Plaintiff": 1,
+  "Defendant": 2,
+  "Court": 3,
+  "Court Circuit": 4,
+  "Case Subject": 5,
+  "Session Type": 6,
+  "Session Date Hijri": 7,
+  "Session Day": 8,
+  "Session Time": 9,
+  "Days Remaining": 10,
+  "Notes": 11,
+  "Status": 12,
+  "Reminder24": 13,
+  "Reminder6": 14,
+  "Created At": 15,
+  "Report": 16,
+};
+
+function cell(row: SheetRow, name: string): string {
+  const index = COLUMN_INDEX[name];
+  return index !== undefined ? (row[index] ?? "") : "";
 }
 
 function nullableString(value: string): string | null {
   return value === "" ? null : value;
+}
+
+const VALID_STATUSES = new Set<SessionStatus>(["Upcoming", "Today", "Finished", "Cancelled"]);
+
+function parseStatus(raw: string): SessionStatus {
+  if (VALID_STATUSES.has(raw as SessionStatus)) {
+    return raw as SessionStatus;
+  }
+  return "Upcoming";
 }
 
 function rowToSession(id: number, row: SheetRow): Session {
@@ -40,7 +86,7 @@ function rowToSession(id: number, row: SheetRow): Session {
     sessionDateHijri,
     sessionTime,
     notes: nullableString(cell(row, "Notes")),
-    status: (cell(row, "Status") || "Upcoming") as SessionStatus,
+    status: parseStatus(cell(row, "Status")),
     reminder24: cell(row, "Reminder24") === "true",
     reminder6: cell(row, "Reminder6") === "true",
     createdAt: cell(row, "Created At") || new Date().toISOString(),
@@ -48,22 +94,78 @@ function rowToSession(id: number, row: SheetRow): Session {
   };
 }
 
+const ARABIC_DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+export function computeSessionDayStr(
+  sessionDateHijri: string | null | undefined,
+  sessionTime: string | null | undefined,
+): string {
+  const hearingAt = computeHearingDateTime(sessionDateHijri, sessionTime);
+  if (hearingAt) {
+    return ARABIC_DAYS[hearingAt.getUTCDay()] ?? "—";
+  }
+  const hijri = parseHijriDateString(sessionDateHijri);
+  if (!hijri) return "—";
+  const greg = hijriToGregorian(hijri);
+  if (!greg) return "—";
+  const date = new Date(Date.UTC(greg.year, greg.month - 1, greg.day));
+  return ARABIC_DAYS[date.getUTCDay()] ?? "—";
+}
+
+export function computeDaysRemainingStr(
+  sessionDateHijri: string | null | undefined,
+  sessionTime: string | null | undefined,
+): string {
+  let hearingAt = computeHearingDateTime(sessionDateHijri, sessionTime);
+  if (!hearingAt) {
+    const hijri = parseHijriDateString(sessionDateHijri);
+    if (!hijri) return "—";
+    const greg = hijriToGregorian(hijri);
+    if (!greg) return "—";
+    hearingAt = new Date(Date.UTC(greg.year, greg.month - 1, greg.day));
+  }
+
+  const now = new Date();
+  const hearingYear = hearingAt.getUTCFullYear();
+  const hearingMonth = hearingAt.getUTCMonth();
+  const hearingDay = hearingAt.getUTCDate();
+
+  const nowYear = now.getUTCFullYear();
+  const nowMonth = now.getUTCMonth();
+  const nowDay = now.getUTCDate();
+
+  const hearingMidnight = Date.UTC(hearingYear, hearingMonth, hearingDay);
+  const nowMidnight = Date.UTC(nowYear, nowMonth, nowDay);
+
+  const diffMs = hearingMidnight - nowMidnight;
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "اليوم";
+  if (diffDays < 0) return `انتهت (منذ ${Math.abs(diffDays)} يوم)`;
+  return `${diffDays} يوم`;
+}
+
 function sessionInputToRow(input: SessionInput, createdAt: string): SheetRow {
+  const daysRemaining = computeDaysRemainingStr(input.sessionDateHijri, input.sessionTime);
+  const sessionDay = computeSessionDayStr(input.sessionDateHijri, input.sessionTime);
   return [
-    input.caseNumber ?? "",
-    input.plaintiff ?? "",
-    input.defendant ?? "",
-    input.court ?? "",
-    input.courtCircuit ?? "",
-    input.caseSubject ?? "",
-    input.sessionType ?? "",
-    input.sessionDateHijri ?? "",
-    input.sessionTime ?? "",
-    input.notes ?? "",
-    "Upcoming",
-    "false",
-    "false",
-    createdAt,
+    input.caseNumber ?? "",              // 0: رقم القضية
+    input.plaintiff ?? "",               // 1: المدعي
+    input.defendant ?? "",               // 2: المدعى عليه
+    input.court ?? "",                   // 3: المحكمة
+    input.courtCircuit ?? "",            // 4: الدائرة القضائية
+    input.caseSubject ?? "",             // 5: موضوع القضية
+    input.sessionType ?? "",             // 6: نوع الجلسة
+    input.sessionDateHijri ?? "",        // 7: تاريخ الجلسة هجري
+    sessionDay,                          // 8: يوم الجلسة
+    input.sessionTime ?? "",             // 9: وقت الجلسة
+    daysRemaining,                       // 10: الأيام المتبقية
+    input.notes ?? "",                    // 11: ملاحظات
+    "Upcoming",                          // 12: حالة الجلسة
+    "false",                             // 13: تذكير 24 ساعة
+    "false",                             // 14: تذكير 6 ساعات
+    createdAt,                           // 15: تاريخ الإنشاء
+    "",                                  // 16: التقرير
   ];
 }
 
@@ -93,7 +195,24 @@ function deriveEffectiveStatus(session: Session): SessionStatus {
 export async function listSessions(statusFilter?: SessionStatus): Promise<Session[]> {
   await ensureSheetReady();
   const rows = await listRows();
-  const sessions = rows.map(({ id, values }) => rowToSession(id, values));
+  const sessions = rows
+    .map(({ id, values }) => {
+      const s = rowToSession(id, values);
+      const expectedDay = computeSessionDayStr(s.sessionDateHijri, s.sessionTime);
+      const expectedRemaining = computeDaysRemainingStr(s.sessionDateHijri, s.sessionTime);
+
+      const currentDayCell = cell(values, "Session Day");
+      const currentRemainingCell = cell(values, "Days Remaining");
+
+      if (currentDayCell !== expectedDay || currentRemainingCell !== expectedRemaining) {
+        updateRowCells(id, {
+          [COLUMN_INDEX["Days Remaining"]]: expectedRemaining,
+          [COLUMN_INDEX["Session Day"]]: expectedDay,
+        }).catch((err) => logger.warn({ err, id }, "Failed to auto-sync row cells"));
+      }
+      return s;
+    })
+    .reverse(); // newest (last appended row) first
   if (!statusFilter) {
     return sessions;
   }
@@ -118,31 +237,40 @@ export async function updateSession(
   id: number,
   patch: SessionUpdate,
 ): Promise<Session | null> {
-  const existing = await getSessionById(id);
-  if (!existing) {
+  const rows = await listRows();
+  const match = rows.find((r) => r.id === id);
+  if (!match) {
     return null;
   }
+  const existing = rowToSession(id, match.values);
+  const existingReport = match.values[COLUMN_INDEX["Report"]] ?? "";
+
   const merged: Session = {
     ...existing,
     ...Object.fromEntries(
       Object.entries(patch).filter(([, value]) => value !== undefined),
     ),
   };
+  const daysRemaining = computeDaysRemainingStr(merged.sessionDateHijri, merged.sessionTime);
+  const sessionDay = computeSessionDayStr(merged.sessionDateHijri, merged.sessionTime);
   const row: SheetRow = [
-    merged.caseNumber ?? "",
-    merged.plaintiff ?? "",
-    merged.defendant ?? "",
-    merged.court ?? "",
-    merged.courtCircuit ?? "",
-    merged.caseSubject ?? "",
-    merged.sessionType ?? "",
-    merged.sessionDateHijri ?? "",
-    merged.sessionTime ?? "",
-    merged.notes ?? "",
-    merged.status,
-    String(merged.reminder24),
-    String(merged.reminder6),
-    merged.createdAt,
+    merged.caseNumber ?? "",             // 0: رقم القضية
+    merged.plaintiff ?? "",              // 1: المدعي
+    merged.defendant ?? "",              // 2: المدعى عليه
+    merged.court ?? "",                  // 3: المحكمة
+    merged.courtCircuit ?? "",           // 4: الدائرة القضائية
+    merged.caseSubject ?? "",            // 5: موضوع القضية
+    merged.sessionType ?? "",            // 6: نوع الجلسة
+    merged.sessionDateHijri ?? "",       // 7: تاريخ الجلسة هجري
+    sessionDay,                          // 8: يوم الجلسة
+    merged.sessionTime ?? "",            // 9: وقت الجلسة
+    daysRemaining,                       // 10: الأيام المتبقية
+    merged.notes ?? "",                  // 11: ملاحظات
+    merged.status,                       // 12: حالة الجلسة
+    String(merged.reminder24),           // 13: تذكير 24 ساعة
+    String(merged.reminder6),            // 14: تذكير 6 ساعات
+    merged.createdAt,                    // 15: تاريخ الإنشاء
+    existingReport,                      // 16: التقرير
   ];
   await updateRow(id, row);
   return merged;
@@ -190,4 +318,64 @@ export async function markReminderSent(
 ): Promise<void> {
   const columnName = kind === "24h" ? "Reminder24" : "Reminder6";
   await updateRowCells(id, { [COLUMN_INDEX[columnName]]: "true" });
+}
+
+// ─── Session Reports ──────────────────────────────────────────────────────────
+
+export interface SessionReportData {
+  reportNumber: string;
+  lawyerName: string;
+  summary: string;
+  courtDecision: string;
+  nextSessionDate: string;
+  nextSessionTime: string;
+  ourActionRequired: string;
+  clientActionRequired: string;
+  reportDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Returns the saved report for a session, or null if none exists yet. */
+export async function getSessionReport(id: number): Promise<SessionReportData | null> {
+  await ensureSheetReady();
+  const rows = await listRows();
+  const match = rows.find((r) => r.id === id);
+  if (!match) return null;
+  const raw = match.values[COLUMN_INDEX["Report"]] ?? "";
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SessionReportData;
+  } catch {
+    return null;
+  }
+}
+
+/** Creates or updates the report for a session. */
+export async function upsertSessionReport(
+  id: number,
+  input: Partial<SessionReportData>,
+): Promise<SessionReportData | null> {
+  await ensureSheetReady();
+  const existing = await getSessionById(id);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const current = await getSessionReport(id);
+  const updated: SessionReportData = {
+    reportNumber: input.reportNumber ?? current?.reportNumber ?? "01",
+    lawyerName: input.lawyerName ?? current?.lawyerName ?? "",
+    summary: input.summary ?? current?.summary ?? "",
+    courtDecision: input.courtDecision ?? current?.courtDecision ?? "",
+    nextSessionDate: input.nextSessionDate ?? current?.nextSessionDate ?? "",
+    nextSessionTime: input.nextSessionTime ?? current?.nextSessionTime ?? "",
+    ourActionRequired: input.ourActionRequired ?? current?.ourActionRequired ?? "",
+    clientActionRequired: input.clientActionRequired ?? current?.clientActionRequired ?? "",
+    reportDate: input.reportDate ?? current?.reportDate ?? now.split("T")[0],
+    createdAt: current?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  await updateRowCells(id, { [COLUMN_INDEX["Report"]]: JSON.stringify(updated) });
+  return updated;
 }

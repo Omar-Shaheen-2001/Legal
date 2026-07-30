@@ -12,6 +12,11 @@ export interface ReminderPayload {
   sessionTime: string | null;
   /** Which threshold triggered this reminder. */
   kind: "24h" | "6h";
+  court?: string | null;
+  courtCircuit?: string | null;
+  plaintiff?: string | null;
+  defendant?: string | null;
+  caseSubject?: string | null;
 }
 
 export interface ReminderChannel {

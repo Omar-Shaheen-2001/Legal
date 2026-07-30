@@ -1,0 +1,142 @@
+import { Link } from 'wouter';
+import { useListSessions } from '@workspace/api-client-react';
+import { FileText, ChevronLeft, CheckCircle2, Clock, Scale, User } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function deriveEffectiveStatus(storedStatus: string, hearingAt: string | null | undefined) {
+  if (storedStatus === 'Cancelled' || storedStatus === 'Finished') return storedStatus;
+  if (!hearingAt) return storedStatus;
+  const hearing = new Date(hearingAt);
+  const now = new Date();
+  if (hearing.getTime() < now.getTime()) return 'Finished';
+  const sameDay =
+    hearing.getUTCFullYear() === now.getUTCFullYear() &&
+    hearing.getUTCMonth() === now.getUTCMonth() &&
+    hearing.getUTCDate() === now.getUTCDate();
+  return sameDay ? 'Today' : 'Upcoming';
+}
+
+export default function ReportsPage() {
+  const { data: sessions, isLoading, error } = useListSessions();
+
+  return (
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Header */}
+      <div className="fade-in-up">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-1 h-6 rounded-full bg-primary" />
+          <h1 className="text-2xl font-bold tracking-tight">تقارير الجلسات</h1>
+        </div>
+        <p className="text-muted-foreground text-sm mr-3">
+          إدارة وعرض تقارير الجلسات المُعدّة من قِبل المحامين
+        </p>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/8 p-4 flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-destructive shrink-0" />
+          <p className="text-sm text-destructive font-medium">فشل تحميل الجلسات</p>
+        </div>
+      )}
+
+      {/* Loading */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-11 w-11 rounded-xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : sessions && sessions.length > 0 ? (
+        <div className="space-y-3 fade-in-up fade-in-up-delay-2">
+          {sessions.map((session, i) => {
+            const effectiveStatus = deriveEffectiveStatus(session.status, session.hearingAt);
+            const isFinished = effectiveStatus === 'Finished';
+
+            return (
+              <Link key={session.id} href={`/reports/${session.id}`}>
+                <div
+                  className="group rounded-xl border border-border bg-card p-5 cursor-pointer transition-all duration-200 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
+                  style={{ animationDelay: `${i * 0.04}s` }}
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Icon */}
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isFinished ? 'bg-emerald-500/10 group-hover:bg-emerald-500/20' : 'bg-primary/10 group-hover:bg-primary/20'}`}>
+                      <FileText className={`w-5 h-5 ${isFinished ? 'text-emerald-500' : 'text-primary'}`} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-base font-mono">
+                            {session.caseNumber || '—'}
+                          </h3>
+                          {/* Report status badge */}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                            isFinished
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              : 'bg-muted text-muted-foreground border-border'
+                          }`}>
+                            {isFinished ? (
+                              <><CheckCircle2 className="w-3 h-3" /> جاهزة للتقرير</>
+                            ) : (
+                              <><Clock className="w-3 h-3" /> لم تُعقد بعد</>
+                            )}
+                          </span>
+                        </div>
+                        <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                        {session.plaintiff && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <User className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{session.plaintiff}</span>
+                            {session.defendant && <span className="text-muted-foreground/50">←</span>}
+                            {session.defendant && <span className="truncate">{session.defendant}</span>}
+                          </div>
+                        )}
+                        {session.court && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Scale className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{session.court}</span>
+                          </div>
+                        )}
+                        {session.sessionDateHijri && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-xs">
+                            📅 {session.sessionDateHijri}
+                            {session.sessionTime && ` · ${session.sessionTime}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="fade-in-up fade-in-up-delay-2 rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-muted mx-auto mb-4 flex items-center justify-center">
+            <FileText className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">لا توجد جلسات</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            أضف جلسات أولاً من قسم "تحليل رسالة" ثم ادخل التقارير هنا.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -73,5 +73,10 @@
     "vite": "catalog:",
     "wouter": "^3.3.5",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "html2pdf.js": "^0.14.0",
+    "moment": "^2.30.1",
+    "moment-hijri": "^3.0.0"
   }
 }

@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, Save, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Save, RotateCcw, CheckCircle2, ArrowLeft, Bot } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 
@@ -35,7 +33,7 @@ export default function ChatPage() {
     analyzeMutation.mutate(
       { data: { message } },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: any) => {
           setExtractedData(data);
           setFormData({
             caseNumber: data.case_number || '',
@@ -102,30 +100,52 @@ export default function ChatPage() {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  const fields = [
+    { key: 'caseNumber', label: 'رقم القضية', dir: 'ltr' as const, mono: true },
+    { key: 'court', label: 'المحكمة', dir: 'rtl' as const },
+    { key: 'plaintiff', label: 'المدّعي', dir: 'rtl' as const },
+    { key: 'defendant', label: 'المدّعى عليه', dir: 'rtl' as const },
+    { key: 'courtCircuit', label: 'الدائرة القضائية', dir: 'rtl' as const },
+    { key: 'caseSubject', label: 'موضوع القضية', dir: 'rtl' as const },
+    { key: 'sessionType', label: 'نوع الجلسة', dir: 'rtl' as const },
+    { key: 'sessionDateHijri', label: 'تاريخ الجلسة (هجري)', dir: 'ltr' as const, mono: true },
+    { key: 'sessionTime', label: 'وقت الجلسة', dir: 'auto' as const, mono: true },
+  ];
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">تحليل رسالة المحكمة</h1>
-        <p className="text-muted-foreground mt-1">
+    <div className="p-6 lg:p-8 space-y-6">
+      {/* Header */}
+      <div className="fade-in-up">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-1 h-6 rounded-full bg-primary" />
+          <h1 className="text-2xl font-bold tracking-tight">تحليل رسالة المحكمة</h1>
+        </div>
+        <p className="text-muted-foreground text-sm mr-3">
           الصق نص رسالة الجلسة لاستخراج البيانات تلقائياً بالذكاء الاصطناعي
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>نص الرسالة</CardTitle>
-          <CardDescription>
-            الصق نص إشعار الجلسة الواردة من المحكمة
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Message Input Card */}
+      <div className="fade-in-up fade-in-up-delay-1 rounded-xl border border-border bg-card overflow-hidden">
+        {/* Card Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-muted/30">
+          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Bot className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">نص الرسالة</p>
+            <p className="text-xs text-muted-foreground">الصق نص إشعار الجلسة الواردة من المحكمة</p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
           <Textarea
             placeholder="الصق نص رسالة المحكمة هنا..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={6}
             disabled={analyzeMutation.isPending}
-            className="text-base resize-none leading-relaxed"
+            className="text-base resize-none leading-relaxed border-border/50 focus:border-primary/50 bg-background/50"
             dir="auto"
             data-testid="textarea-message"
           />
@@ -133,7 +153,7 @@ export default function ChatPage() {
             <Button
               onClick={handleAnalyze}
               disabled={analyzeMutation.isPending || !message.trim()}
-              className="gap-2"
+              className="gap-2 shadow-sm"
               data-testid="button-analyze"
             >
               <Sparkles className="w-4 h-4" />
@@ -151,139 +171,82 @@ export default function ChatPage() {
               </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
+      {/* Success Alert */}
       {extractedData && (
-        <Alert className="border-green-500/60 bg-green-50 dark:bg-green-950/30 animate-in fade-in-50">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800 dark:text-green-300 font-medium">
-            ✅ تم استخراج البيانات — راجع الحقول أدناه ثم اضغط <strong>"حفظ الجلسة في Google Sheets"</strong> لحفظها
-          </AlertDescription>
-        </Alert>
+        <div className="fade-in-up rounded-xl border border-emerald-500/30 bg-emerald-500/8 p-4 flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">تم استخراج البيانات بنجاح</p>
+            <p className="text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-0.5">
+              راجع الحقول أدناه وعدّلها إن لزم، ثم اضغط زر الحفظ
+            </p>
+          </div>
+        </div>
       )}
 
+      {/* Extracted Data Form */}
       {extractedData && (
-        <Card className="border-primary/50 shadow-lg animate-in fade-in-50 slide-in-from-bottom-2">
-          <CardHeader>
-            <CardTitle>البيانات المستخرجة</CardTitle>
-            <CardDescription>
-              راجع الحقول وعدّلها إن لزم، ثم اضغط زر الحفظ في الأسفل
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="caseNumber">رقم القضية</Label>
-                <Input
-                  id="caseNumber"
-                  value={formData.caseNumber || ''}
-                  onChange={(e) => updateField('caseNumber', e.target.value)}
-                  className="font-mono"
-                  dir="ltr"
-                  data-testid="input-caseNumber"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="court">المحكمة</Label>
-                <Input
-                  id="court"
-                  value={formData.court || ''}
-                  onChange={(e) => updateField('court', e.target.value)}
-                  data-testid="input-court"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plaintiff">المدّعي</Label>
-                <Input
-                  id="plaintiff"
-                  value={formData.plaintiff || ''}
-                  onChange={(e) => updateField('plaintiff', e.target.value)}
-                  data-testid="input-plaintiff"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="defendant">المدّعى عليه</Label>
-                <Input
-                  id="defendant"
-                  value={formData.defendant || ''}
-                  onChange={(e) => updateField('defendant', e.target.value)}
-                  data-testid="input-defendant"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="courtCircuit">الدائرة القضائية</Label>
-                <Input
-                  id="courtCircuit"
-                  value={formData.courtCircuit || ''}
-                  onChange={(e) => updateField('courtCircuit', e.target.value)}
-                  data-testid="input-courtCircuit"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="caseSubject">موضوع القضية</Label>
-                <Input
-                  id="caseSubject"
-                  value={formData.caseSubject || ''}
-                  onChange={(e) => updateField('caseSubject', e.target.value)}
-                  data-testid="input-caseSubject"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sessionType">نوع الجلسة</Label>
-                <Input
-                  id="sessionType"
-                  value={formData.sessionType || ''}
-                  onChange={(e) => updateField('sessionType', e.target.value)}
-                  data-testid="input-sessionType"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sessionDateHijri">تاريخ الجلسة (هجري)</Label>
-                <Input
-                  id="sessionDateHijri"
-                  value={formData.sessionDateHijri || ''}
-                  onChange={(e) => updateField('sessionDateHijri', e.target.value)}
-                  className="font-mono"
-                  dir="ltr"
-                  data-testid="input-sessionDateHijri"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sessionTime">وقت الجلسة</Label>
-                <Input
-                  id="sessionTime"
-                  value={formData.sessionTime || ''}
-                  onChange={(e) => updateField('sessionTime', e.target.value)}
-                  className="font-mono"
-                  dir="auto"
-                  data-testid="input-sessionTime"
-                />
-              </div>
+        <div className="fade-in-up rounded-xl border border-primary/20 bg-card overflow-hidden shadow-sm">
+          {/* Form Header */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-primary/3">
+            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+              <ArrowLeft className="w-4 h-4 text-primary" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">ملاحظات</Label>
+            <div>
+              <p className="text-sm font-semibold">البيانات المستخرجة</p>
+              <p className="text-xs text-muted-foreground">راجع الحقول وعدّلها إن لزم</p>
+            </div>
+          </div>
+
+          <div className="p-5 space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {fields.map((f) => (
+                <div key={f.key} className="space-y-1.5">
+                  <Label htmlFor={f.key} className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {f.label}
+                  </Label>
+                  <Input
+                    id={f.key}
+                    value={formData[f.key] || ''}
+                    onChange={(e) => updateField(f.key, e.target.value)}
+                    className={`${f.mono ? 'font-mono' : ''} h-9 text-sm`}
+                    dir={f.dir}
+                    data-testid={`input-${f.key}`}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="notes" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                ملاحظات
+              </Label>
               <Textarea
                 id="notes"
                 value={formData.notes || ''}
                 onChange={(e) => updateField('notes', e.target.value)}
                 rows={3}
                 dir="auto"
+                className="resize-none text-sm"
                 data-testid="textarea-notes"
               />
             </div>
+
             <Button
               onClick={handleSave}
               disabled={createMutation.isPending}
               size="lg"
-              className="w-full gap-2 text-base font-bold h-14"
+              className="w-full gap-2 text-base font-bold h-12 shadow-sm"
               data-testid="button-save"
             >
               <Save className="w-5 h-5" />
-              {createMutation.isPending ? 'جارٍ الحفظ في Google Sheets...' : '⬆️ حفظ الجلسة في Google Sheets'}
+              {createMutation.isPending ? 'جارٍ الحفظ في Google Sheets...' : 'حفظ الجلسة في Google Sheets'}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

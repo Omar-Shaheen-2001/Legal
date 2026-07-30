@@ -1,36 +1,49 @@
 import { useGetDashboardStats } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { Briefcase, Calendar, CheckCircle2, Clock, ArrowLeft, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Link } from 'wouter';
 
 const stats = [
   {
     key: 'totalCases',
     label: 'إجمالي القضايا',
     icon: Briefcase,
-    color: 'text-chart-1',
-    bgColor: 'bg-chart-1/10',
+    gradient: 'from-blue-500/15 to-blue-600/5',
+    iconBg: 'bg-blue-500/15',
+    iconColor: 'text-blue-500',
+    borderColor: 'border-blue-500/20',
+    dotColor: 'bg-blue-500',
   },
   {
     key: 'todayHearings',
     label: 'جلسات اليوم',
     icon: Calendar,
-    color: 'text-chart-2',
-    bgColor: 'bg-chart-2/10',
+    gradient: 'from-amber-500/15 to-amber-600/5',
+    iconBg: 'bg-amber-500/15',
+    iconColor: 'text-amber-500',
+    borderColor: 'border-amber-500/20',
+    dotColor: 'bg-amber-500',
   },
   {
     key: 'upcomingHearings',
     label: 'جلسات قادمة',
     icon: Clock,
-    color: 'text-chart-3',
-    bgColor: 'bg-chart-3/10',
+    gradient: 'from-emerald-500/15 to-emerald-600/5',
+    iconBg: 'bg-emerald-500/15',
+    iconColor: 'text-emerald-500',
+    borderColor: 'border-emerald-500/20',
+    dotColor: 'bg-emerald-500',
   },
   {
     key: 'finishedHearings',
     label: 'جلسات منتهية',
     icon: CheckCircle2,
-    color: 'text-chart-4',
-    bgColor: 'bg-chart-4/10',
+    gradient: 'from-purple-500/15 to-purple-600/5',
+    iconBg: 'bg-purple-500/15',
+    iconColor: 'text-purple-500',
+    borderColor: 'border-purple-500/20',
+    dotColor: 'bg-purple-500',
   },
 ] as const;
 
@@ -40,88 +53,101 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">فشل تحميل إحصائيات لوحة التحكم</p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/8 p-5 flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-destructive shrink-0" />
+          <p className="text-sm text-destructive font-medium">فشل تحميل إحصائيات لوحة التحكم</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">لوحة التحكم</h1>
-        <p className="text-muted-foreground mt-1">
-          نظرة عامة على نشاط جلسات المحكمة
-        </p>
+    <div className="p-6 lg:p-8 space-y-8">
+      {/* Header */}
+      <div className="fade-in-up">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-1 h-6 rounded-full bg-primary" />
+          <h1 className="text-2xl font-bold tracking-tight">لوحة التحكم</h1>
+        </div>
+        <p className="text-muted-foreground text-sm mr-3">نظرة عامة على نشاط جلسات المحكمة</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
+      {/* Stats Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, i) => {
           const Icon = stat.icon;
           const value = data?.[stat.key];
 
           return (
-            <Card key={stat.key} className="transition-shadow hover:shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.label}
-                </CardTitle>
-                <div className={`w-8 h-8 rounded-md ${stat.bgColor} flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${stat.color}`} />
+            <div
+              key={stat.key}
+              className={`fade-in-up fade-in-up-delay-${i + 1} rounded-xl border ${stat.borderColor} bg-gradient-to-br ${stat.gradient} p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-5 h-5 ${stat.iconColor}`} />
                 </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <div className="text-3xl font-bold font-mono" data-testid={`stat-${stat.key}`}>
-                    {value ?? 0}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                <div className={`w-2 h-2 rounded-full ${stat.dotColor} mt-1`} />
+              </div>
+              {isLoading ? (
+                <Skeleton className="h-9 w-16 mb-1" />
+              ) : (
+                <div className="text-4xl font-bold font-mono tracking-tight" data-testid={`stat-${stat.key}`}>
+                  {value ?? 0}
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</p>
+            </div>
           );
         })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>إجراءات سريعة</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <a
-            href="/chat"
-            className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all group"
+      {/* Quick Actions */}
+      <div className="fade-in-up fade-in-up-delay-4 grid gap-4 sm:grid-cols-2">
+        <Link href="/chat">
+          <div
+            className="group relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/8 to-primary/3 p-6 cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5"
             data-testid="link-analyze-message"
           >
-            <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center group-hover:bg-primary/20 transition-colors shrink-0">
-              <Calendar className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <div className="font-medium">تحليل رسالة جديدة</div>
-              <div className="text-sm text-muted-foreground">
-                استخراج تفاصيل الجلسة من الرسالة النصية
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-base mb-1">تحليل رسالة جديدة</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  استخراج تفاصيل الجلسة من الرسالة النصية بالذكاء الاصطناعي
+                </div>
               </div>
             </div>
-          </a>
-          <a
-            href="/sessions"
-            className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all group"
+            <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowLeft className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/sessions">
+          <div
+            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 cursor-pointer transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5"
             data-testid="link-view-sessions"
           >
-            <div className="w-10 h-10 bg-accent/20 rounded-md flex items-center justify-center group-hover:bg-accent/30 transition-colors shrink-0">
-              <Briefcase className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <div>
-              <div className="font-medium">عرض جميع الجلسات</div>
-              <div className="text-sm text-muted-foreground">
-                تصفّح وإدارة جلسات الاستماع
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                <Calendar className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-base mb-1">عرض جميع الجلسات</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  تصفّح وإدارة جلسات الاستماع المسجّلة
+                </div>
               </div>
             </div>
-          </a>
-        </CardContent>
-      </Card>
+            <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }

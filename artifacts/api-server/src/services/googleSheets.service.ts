@@ -10,20 +10,23 @@ import { logger } from "../lib/logger";
  */
 
 export const SHEET_COLUMNS = [
-  "Case Number",
-  "Plaintiff",
-  "Defendant",
-  "Court",
-  "Court Circuit",
-  "Case Subject",
-  "Session Type",
-  "Session Date Hijri",
-  "Session Time",
-  "Notes",
-  "Status",
-  "Reminder24",
-  "Reminder6",
-  "Created At",
+  "رقم القضية",
+  "المدعي",
+  "المدعى عليه",
+  "المحكمة",
+  "الدائرة القضائية",
+  "موضوع القضية",
+  "نوع الجلسة",
+  "تاريخ الجلسة هجري",
+  "يوم الجلسة",
+  "وقت الجلسة",
+  "الأيام المتبقية",
+  "ملاحظات",
+  "حالة الجلسة",
+  "تذكير 24 ساعة",
+  "تذكير 6 ساعات",
+  "تاريخ الإنشاء",
+  "التقرير",
 ] as const;
 
 export type SheetRow = string[];
@@ -52,11 +55,11 @@ function getClient(): sheets_v4.Sheets {
 }
 
 function dataRange(): string {
-  return `${env.googleSheetName}!A2:N`;
+  return `${env.googleSheetName}!A:Q`;
 }
 
 function headerRange(): string {
-  return `${env.googleSheetName}!A1:N1`;
+  return `${env.googleSheetName}!A1:Q1`;
 }
 
 let sheetIdCache: number | null = null;
@@ -84,41 +87,39 @@ async function getSheetId(): Promise<number> {
 
 /** Ensures the target sheet tab exists with the expected header row. Safe to call repeatedly. */
 export async function ensureSheetReady(): Promise<void> {
-  const sheets = getClient();
-  const spreadsheet = await sheets.spreadsheets.get({
-    spreadsheetId: env.googleSpreadsheetId,
-  });
-  const existing = spreadsheet.data.sheets?.find(
-    (s) => s.properties?.title === env.googleSheetName,
-  );
-
-  if (!existing) {
-    await sheets.spreadsheets.batchUpdate({
+  try {
+    const sheets = getClient();
+    const spreadsheet = await sheets.spreadsheets.get({
       spreadsheetId: env.googleSpreadsheetId,
-      requestBody: {
-        requests: [{ addSheet: { properties: { title: env.googleSheetName } } }],
-      },
     });
-    sheetIdCache = null;
-  }
+    const existing = spreadsheet.data.sheets?.find(
+      (s) => s.properties?.title === env.googleSheetName,
+    );
 
-  const headerResponse = await sheets.spreadsheets.values.get({
-    spreadsheetId: env.googleSpreadsheetId,
-    range: headerRange(),
-  });
-  const currentHeader = headerResponse.data.values?.[0];
-  const headerMatches =
-    currentHeader &&
-    currentHeader.length === SHEET_COLUMNS.length &&
-    SHEET_COLUMNS.every((col, i) => currentHeader[i] === col);
+    if (!existing) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: env.googleSpreadsheetId,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: env.googleSheetName } } }],
+        },
+      });
+      sheetIdCache = null;
+    }
 
-  if (!headerMatches) {
+    const headerResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: env.googleSpreadsheetId,
+      range: `${env.googleSheetName}!A1:Z1`,
+    });
+    const currentHeader = headerResponse.data.values?.[0];
+
     await sheets.spreadsheets.values.update({
       spreadsheetId: env.googleSpreadsheetId,
       range: headerRange(),
       valueInputOption: "RAW",
       requestBody: { values: [[...SHEET_COLUMNS]] },
     });
+  } catch (err) {
+    logger.warn({ err }, "ensureSheetReady non-fatal warning");
   }
 }
 
@@ -127,7 +128,7 @@ export async function listRows(): Promise<{ id: number; values: SheetRow }[]> {
   const sheets = getClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: env.googleSpreadsheetId,
-    range: dataRange(),
+    range: `${env.googleSheetName}!A2:Q`,
   });
   const rows = response.data.values ?? [];
   return rows
@@ -140,23 +141,23 @@ export async function appendRow(values: SheetRow): Promise<number> {
   const sheets = getClient();
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: env.googleSpreadsheetId,
-    range: dataRange(),
+    range: `${env.googleSheetName}!A:Q`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values: [values] },
   });
   const updatedRange = response.data.updates?.updatedRange;
   const match = updatedRange?.match(/![A-Z]+(\d+):/);
-  if (!match) {
-    logger.warn({ updatedRange }, "Could not parse appended row id from Sheets response");
-    const rows = await listRows();
-    const last = rows[rows.length - 1];
-    if (!last) {
-      throw new Error("Failed to determine id of newly created session row.");
-    }
-    return last.id;
+  if (match) {
+    return Number(match[1]);
   }
-  return Number(match[1]);
+  logger.warn({ updatedRange }, "Could not parse appended row id from Sheets response");
+  const rows = await listRows();
+  const last = rows[rows.length - 1];
+  if (!last) {
+    throw new Error("Failed to determine id of newly created session row.");
+  }
+  return last.id;
 }
 
 /** Overwrites a single existing row (1-based sheet row id) with new values. */
@@ -164,7 +165,7 @@ export async function updateRow(id: number, values: SheetRow): Promise<void> {
   const sheets = getClient();
   await sheets.spreadsheets.values.update({
     spreadsheetId: env.googleSpreadsheetId,
-    range: `${env.googleSheetName}!A${id}:N${id}`,
+    range: `${env.googleSheetName}!A${id}:Q${id}`,
     valueInputOption: "RAW",
     requestBody: { values: [values] },
   });

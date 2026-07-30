@@ -1,24 +1,11 @@
 import { HfInference } from "@huggingface/inference";
-import { env } from "../config/env";
+import { getSettings } from "../config/settings-store";
 import { logger } from "../lib/logger";
 import {
   SESSION_EXTRACTION_SYSTEM_PROMPT,
   buildExtractionUserPrompt,
 } from "../prompts/extraction.prompt";
 import type { SessionExtraction } from "@workspace/api-client-react";
-
-const EXTRACTION_FIELDS = [
-  "case_number",
-  "plaintiff",
-  "defendant",
-  "court",
-  "court_circuit",
-  "case_subject",
-  "session_type",
-  "session_date_hijri",
-  "session_time",
-  "notes",
-] as const;
 
 export class AiExtractionError extends Error {
   constructor(message: string) {
@@ -28,15 +15,23 @@ export class AiExtractionError extends Error {
 }
 
 /**
- * Sends a raw court SMS message to Hugging Face Inference and returns the
+ * Sends a raw court SMS message to the AI API and returns the
  * extracted, structured hearing fields. Any field the model can't find comes
  * back as null (never invented, never omitted).
  */
+
 export async function analyzeCourtMessage(
   message: string,
 ): Promise<SessionExtraction> {
-  const hf = new HfInference(env.hfApiToken);
-  const model = env.hfModel;
+  const settings = getSettings();
+  const token = settings.hfApiToken;
+  const model = settings.hfModel || "meta-llama/Llama-3.1-8B-Instruct";
+
+  if (!token) {
+    throw new AiExtractionError("يرجى إدخال رمز Hugging Face Access Token في الإعدادات أولاً.");
+  }
+
+  const hf = new HfInference(token);
 
   let raw: string | undefined;
   try {
@@ -50,58 +45,76 @@ export async function analyzeCourtMessage(
         temperature: 0.1,
         max_new_tokens: 512,
       },
-      response_format: { type: "json_object" },
     });
     raw = response.choices[0]?.message?.content ?? undefined;
-  } catch (err) {
-    logger.error({ err }, "HuggingFace extraction request failed");
-    // Some deployments don't support response_format — retry without it
-    try {
-      logger.warn("Retrying without response_format constraint");
-      const hf2 = new HfInference(env.hfApiToken);
-      const response2 = await hf2.chatCompletion({
-        model,
-        messages: [
-          { role: "system", content: SESSION_EXTRACTION_SYSTEM_PROMPT },
-          { role: "user", content: buildExtractionUserPrompt(message) },
-        ],
-        parameters: {
-          temperature: 0.1,
-          max_new_tokens: 512,
-        },
-      });
-      raw = response2.choices[0]?.message?.content ?? undefined;
-    } catch (err2) {
-      logger.error({ err2 }, "HuggingFace extraction retry also failed");
-      throw new AiExtractionError(
-        "تعذّر الوصول إلى خدمة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
-      );
-    }
+  } catch (err: any) {
+    logger.error({ err }, "Hugging Face AI extraction request failed");
+    throw new AiExtractionError(
+      `فشل الاتصال بمزود الذكاء الاصطناعي (Hugging Face): ${err?.message || "خطأ غير معروف"}`
+    );
   }
+
 
   if (!raw) {
     throw new AiExtractionError("لم يُرجع نموذج الذكاء الاصطناعي أي محتوى.");
   }
 
-  // Extract JSON block from response (model may wrap it in markdown fences)
-  const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) ?? null;
-  const jsonStr = jsonMatch ? jsonMatch[1].trim() : raw.trim();
+  logger.info({ raw }, "Raw AI response received");
+
+  // Strategy 1: extract from markdown code block ```json ... ```
+  let jsonStr: string | null = null;
+  const mdMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (mdMatch) {
+    jsonStr = mdMatch[1].trim();
+  }
+
+  // Strategy 2: find the first { ... } block in the response
+  if (!jsonStr) {
+    const braceStart = raw.indexOf("{");
+    const braceEnd = raw.lastIndexOf("}");
+    if (braceStart !== -1 && braceEnd > braceStart) {
+      jsonStr = raw.substring(braceStart, braceEnd + 1).trim();
+    }
+  }
+
+  // Strategy 3: use raw content as-is
+  if (!jsonStr) {
+    jsonStr = raw.trim();
+  }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonStr) as Record<string, unknown>;
   } catch {
-    logger.error({ raw }, "AI extraction returned non-JSON content");
+    logger.error({ raw, jsonStr }, "AI extraction returned non-JSON content");
     throw new AiExtractionError(
       "أرجع النموذج استجابةً غير صالحة. يرجى المحاولة مرة أخرى.",
     );
   }
 
+
   const result = {} as SessionExtraction;
+  const EXTRACTION_FIELDS = [
+    "case_number",
+    "plaintiff",
+    "defendant",
+    "court",
+    "court_circuit",
+    "case_subject",
+    "session_type",
+    "session_date_hijri",
+    "session_time",
+    "notes",
+  ] as const;
+
   for (const field of EXTRACTION_FIELDS) {
-    const value = parsed[field];
-    result[field] =
-      typeof value === "string" && value.trim() !== "" ? value : null;
+    const val = parsed[field];
+    if (typeof val === "string" && val.trim().length > 0) {
+      result[field] = val.trim();
+    } else {
+      result[field] = null;
+    }
   }
+
   return result;
 }

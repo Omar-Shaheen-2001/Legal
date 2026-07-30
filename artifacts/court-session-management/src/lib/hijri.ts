@@ -1,8 +1,9 @@
 /**
  * Lightweight Hijri ↔ Gregorian conversion for the frontend.
- * Uses the same tabular (civil) Islamic calendar algorithm as the backend.
- * Accuracy: ±1 day around some month boundaries vs. Umm al-Qura calendar.
+ * Uses `moment-hijri` to ensure strict Umm al-Qura calendar accuracy.
  */
+
+import moment from 'moment-hijri';
 
 export interface HijriDate {
   year: number;
@@ -16,47 +17,14 @@ const HIJRI_MONTHS_AR = [
   'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة',
 ];
 
-function gregorianToJDN(year: number, month: number, day: number): number {
-  const a = Math.floor((14 - month) / 12);
-  const y = year + 4800 - a;
-  const m = month + 12 * a - 3;
-  return (
-    day +
-    Math.floor((153 * m + 2) / 5) +
-    365 * y +
-    Math.floor(y / 4) -
-    Math.floor(y / 100) +
-    Math.floor(y / 400) -
-    32045
-  );
-}
-
-function jdnToHijri(jdn: number): HijriDate {
-  let l = jdn - 1948440 + 10632;
-  const n = Math.floor((l - 1) / 10631);
-  l = l - 10631 * n + 354;
-  const j =
-    Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) +
-    Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
-  l =
-    l -
-    Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
-    Math.floor(j / 16) * Math.floor((15238 * j) / 43) +
-    29;
-  const year = 30 * n + j - 30;
-  const month = Math.floor((24 * l) / 709);
-  const day = l - Math.floor((709 * month) / 24);
-  return { year, month, day };
-}
-
 /** Convert a JS Date to its Hijri equivalent (uses UTC date components). */
 export function dateToHijri(date: Date): HijriDate {
-  const jdn = gregorianToJDN(
-    date.getUTCFullYear(),
-    date.getUTCMonth() + 1,
-    date.getUTCDate(),
-  );
-  return jdnToHijri(jdn);
+  const m = moment([date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()]);
+  return {
+    year: m.iYear(),
+    month: m.iMonth() + 1,
+    day: m.iDate(),
+  };
 }
 
 /** Current Hijri date in Riyadh time (UTC+3). */

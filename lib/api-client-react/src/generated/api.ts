@@ -30,6 +30,8 @@ import type {
   Session,
   SessionExtraction,
   SessionInput,
+  SessionReport,
+  SessionReportInput,
   SessionUpdate
 } from './api.schemas';
 
@@ -880,3 +882,49 @@ export const useDeleteSession = <TError = ErrorType<ErrorResponse>,
       return useMutation(getDeleteSessionMutationOptions(options));
     }
 
+// ─── Session Reports ──────────────────────────────────────────────────────────
+
+export const getSessionReportUrl = (id: number) => `/api/sessions/${id}/report`;
+
+export const getSessionReport = async (id: number, options?: RequestInit): Promise<SessionReport | null> => {
+  return customFetch<SessionReport | null>(getSessionReportUrl(id), { ...options, method: 'GET' });
+};
+
+export const getGetSessionReportQueryKey = (id: number) => [`/api/sessions/${id}/report`] as const;
+
+export const useGetSessionReport = <TData = Awaited<ReturnType<typeof getSessionReport>>, TError = ErrorType<ErrorResponse>>(
+  id: number,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getSessionReport>>, TError, TData>, request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetSessionReportQueryKey(id);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSessionReport>>> = ({ signal }) =>
+    getSessionReport(id, { signal, ...requestOptions } as RequestInit);
+  return withQueryKey(useQuery({ queryKey, queryFn, enabled: !!id, ...queryOptions }), queryKey);
+};
+
+export const upsertSessionReport = async (id: number, sessionReportInput: SessionReportInput, options?: RequestInit): Promise<SessionReport> => {
+  return customFetch<SessionReport>(getSessionReportUrl(id), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sessionReportInput),
+  });
+};
+
+export const getUpsertSessionReportMutationOptions = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof upsertSessionReport>>, TError, { id: number; data: SessionReportInput }, TContext>, request?: SecondParameter<typeof customFetch> }
+): UseMutationOptions<Awaited<ReturnType<typeof upsertSessionReport>>, TError, { id: number; data: SessionReportInput }, TContext> => {
+  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertSessionReport>>, { id: number; data: SessionReportInput }> = (props) => {
+    const { id, data } = props ?? {};
+    return upsertSessionReport(id, data, requestOptions);
+  };
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useUpsertSessionReport = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof upsertSessionReport>>, TError, { id: number; data: SessionReportInput }, TContext>, request?: SecondParameter<typeof customFetch> }
+): UseMutationResult<Awaited<ReturnType<typeof upsertSessionReport>>, TError, { id: number; data: SessionReportInput }, TContext> => {
+  return useMutation(getUpsertSessionReportMutationOptions(options));
+};

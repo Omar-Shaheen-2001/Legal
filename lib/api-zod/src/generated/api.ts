@@ -105,8 +105,8 @@ export const ListSessionsResponseItem = zod.object({
   "status": zod.enum(['Upcoming', 'Today', 'Finished', 'Cancelled']),
   "reminder24": zod.boolean(),
   "reminder6": zod.boolean(),
-  "createdAt": zod.coerce.date(),
-  "hearingAt": zod.coerce.date().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
+  "createdAt": zod.string(),
+  "hearingAt": zod.string().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
 })
 export const ListSessionsResponse = zod.array(ListSessionsResponseItem)
 
@@ -142,8 +142,8 @@ export const CreateSessionResponse = zod.object({
   "status": zod.enum(['Upcoming', 'Today', 'Finished', 'Cancelled']),
   "reminder24": zod.boolean(),
   "reminder6": zod.boolean(),
-  "createdAt": zod.coerce.date(),
-  "hearingAt": zod.coerce.date().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
+  "createdAt": zod.string(),
+  "hearingAt": zod.string().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
 })
 
 
@@ -169,8 +169,8 @@ export const GetSessionResponse = zod.object({
   "status": zod.enum(['Upcoming', 'Today', 'Finished', 'Cancelled']),
   "reminder24": zod.boolean(),
   "reminder6": zod.boolean(),
-  "createdAt": zod.coerce.date(),
-  "hearingAt": zod.coerce.date().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
+  "createdAt": zod.string(),
+  "hearingAt": zod.string().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
 })
 
 
@@ -210,8 +210,8 @@ export const UpdateSessionResponse = zod.object({
   "status": zod.enum(['Upcoming', 'Today', 'Finished', 'Cancelled']),
   "reminder24": zod.boolean(),
   "reminder6": zod.boolean(),
-  "createdAt": zod.coerce.date(),
-  "hearingAt": zod.coerce.date().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
+  "createdAt": zod.string(),
+  "hearingAt": zod.string().nullable().describe('Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.')
 })
 
 

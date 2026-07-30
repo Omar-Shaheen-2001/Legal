@@ -1,16 +1,14 @@
 import { useParams, useLocation } from 'wouter';
 import { useGetSession, useUpdateSession, useDeleteSession, getListSessionsQueryKey, getGetDashboardStatsQueryKey, getGetSessionQueryKey } from '@workspace/api-client-react';
 import type { SessionStatus } from '@workspace/api-client-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { ArrowRight, Save, Trash2 } from 'lucide-react';
+import { ArrowRight, Save, Trash2, Scale } from 'lucide-react';
 import { TimeRemainingCard } from '@/components/time-remaining';
 import {
   AlertDialog,
@@ -38,6 +36,26 @@ const statusLabelMap: Record<SessionStatus, string> = {
   Finished: 'منتهية',
   Cancelled: 'ملغية',
 };
+
+const statusStyleMap: Record<SessionStatus, string> = {
+  Today: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+  Upcoming: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+  Finished: 'bg-muted text-muted-foreground border border-border',
+  Cancelled: 'bg-destructive/10 text-destructive border border-destructive/20',
+};
+
+const formFields = [
+  { key: 'caseNumber', label: 'رقم القضية', dir: 'ltr' as const, mono: true },
+  { key: 'status', label: 'الحالة', type: 'select' },
+  { key: 'plaintiff', label: 'المدّعي', dir: 'rtl' as const },
+  { key: 'defendant', label: 'المدّعى عليه', dir: 'rtl' as const },
+  { key: 'court', label: 'المحكمة', dir: 'rtl' as const },
+  { key: 'courtCircuit', label: 'الدائرة القضائية', dir: 'rtl' as const },
+  { key: 'caseSubject', label: 'موضوع القضية', dir: 'rtl' as const },
+  { key: 'sessionType', label: 'نوع الجلسة', dir: 'rtl' as const },
+  { key: 'sessionDateHijri', label: 'تاريخ الجلسة (هجري)', dir: 'ltr' as const, mono: true },
+  { key: 'sessionTime', label: 'وقت الجلسة', dir: 'auto' as const, mono: true },
+];
 
 export default function SessionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -82,17 +100,10 @@ export default function SessionDetailPage() {
           queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey(sessionId) });
           queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
-          toast({
-            title: 'تم الحفظ',
-            description: 'تم تحديث الجلسة بنجاح',
-          });
+          toast({ title: 'تم الحفظ', description: 'تم تحديث الجلسة بنجاح' });
         },
         onError: (error: any) => {
-          toast({
-            title: 'فشل الحفظ',
-            description: error?.message || 'تعذّر تحديث الجلسة',
-            variant: 'destructive',
-          });
+          toast({ title: 'فشل الحفظ', description: error?.message || 'تعذّر تحديث الجلسة', variant: 'destructive' });
         },
       }
     );
@@ -105,18 +116,11 @@ export default function SessionDetailPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
-          toast({
-            title: 'تم الحذف',
-            description: 'تم حذف الجلسة بنجاح',
-          });
+          toast({ title: 'تم الحذف', description: 'تم حذف الجلسة بنجاح' });
           setLocation('/sessions');
         },
         onError: (error: any) => {
-          toast({
-            title: 'فشل الحذف',
-            description: error?.message || 'تعذّر حذف الجلسة',
-            variant: 'destructive',
-          });
+          toast({ title: 'فشل الحذف', description: error?.message || 'تعذّر حذف الجلسة', variant: 'destructive' });
         },
       }
     );
@@ -129,8 +133,9 @@ export default function SessionDetailPage() {
           <ArrowRight className="w-4 h-4" />
           العودة إلى الجلسات
         </Button>
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-          <p className="text-sm text-destructive">فشل تحميل تفاصيل الجلسة</p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/8 p-5 flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-destructive shrink-0" />
+          <p className="text-sm text-destructive font-medium">فشل تحميل تفاصيل الجلسة</p>
         </div>
       </div>
     );
@@ -138,18 +143,14 @@ export default function SessionDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-4xl mx-auto space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-64" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
+      <div className="p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+        <Skeleton className="h-9 w-48" />
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <Skeleton className="h-6 w-48" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-9 w-full" />)}
+          </div>
+        </div>
       </div>
     );
   }
@@ -157,184 +158,125 @@ export default function SessionDetailPage() {
   if (!session) return null;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="fade-in-up flex items-center justify-between gap-4">
         <Button
           variant="ghost"
           onClick={() => setLocation('/sessions')}
-          className="gap-2"
+          size="sm"
+          className="gap-2 text-muted-foreground hover:text-foreground -mr-2"
           data-testid="button-back"
         >
           <ArrowRight className="w-4 h-4" />
           العودة إلى الجلسات
         </Button>
-        <Badge
-          variant={
-            session.status === 'Today'
-              ? 'default'
-              : session.status === 'Upcoming'
-              ? 'secondary'
-              : session.status === 'Cancelled'
-              ? 'destructive'
-              : 'outline'
-          }
-        >
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${statusStyleMap[session.status]}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
           {statusLabelMap[session.status]}
-        </Badge>
+        </span>
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight font-mono">
-          {session.caseNumber || 'تفاصيل الجلسة'}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          تاريخ الإنشاء: {new Date(session.createdAt).toLocaleDateString('ar-SA')}
-        </p>
-      </div>
-
-      <TimeRemainingCard hearingAt={session.hearingAt} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>بيانات الجلسة</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="caseNumber">رقم القضية</Label>
-              <Input
-                id="caseNumber"
-                value={formData.caseNumber || ''}
-                onChange={(e) => updateField('caseNumber', e.target.value)}
-                className="font-mono"
-                dir="ltr"
-                data-testid="input-caseNumber"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">الحالة</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => updateField('status', value)}
-              >
-                <SelectTrigger id="status" data-testid="select-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Upcoming">قادمة</SelectItem>
-                  <SelectItem value="Today">اليوم</SelectItem>
-                  <SelectItem value="Finished">منتهية</SelectItem>
-                  <SelectItem value="Cancelled">ملغية</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="plaintiff">المدّعي</Label>
-              <Input
-                id="plaintiff"
-                value={formData.plaintiff || ''}
-                onChange={(e) => updateField('plaintiff', e.target.value)}
-                data-testid="input-plaintiff"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="defendant">المدّعى عليه</Label>
-              <Input
-                id="defendant"
-                value={formData.defendant || ''}
-                onChange={(e) => updateField('defendant', e.target.value)}
-                data-testid="input-defendant"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="court">المحكمة</Label>
-              <Input
-                id="court"
-                value={formData.court || ''}
-                onChange={(e) => updateField('court', e.target.value)}
-                data-testid="input-court"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="courtCircuit">الدائرة القضائية</Label>
-              <Input
-                id="courtCircuit"
-                value={formData.courtCircuit || ''}
-                onChange={(e) => updateField('courtCircuit', e.target.value)}
-                data-testid="input-courtCircuit"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="caseSubject">موضوع القضية</Label>
-              <Input
-                id="caseSubject"
-                value={formData.caseSubject || ''}
-                onChange={(e) => updateField('caseSubject', e.target.value)}
-                data-testid="input-caseSubject"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sessionType">نوع الجلسة</Label>
-              <Input
-                id="sessionType"
-                value={formData.sessionType || ''}
-                onChange={(e) => updateField('sessionType', e.target.value)}
-                data-testid="input-sessionType"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sessionDateHijri">تاريخ الجلسة (هجري)</Label>
-              <Input
-                id="sessionDateHijri"
-                value={formData.sessionDateHijri || ''}
-                onChange={(e) => updateField('sessionDateHijri', e.target.value)}
-                className="font-mono"
-                dir="ltr"
-                data-testid="input-sessionDateHijri"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sessionTime">وقت الجلسة</Label>
-              <Input
-                id="sessionTime"
-                value={formData.sessionTime || ''}
-                onChange={(e) => updateField('sessionTime', e.target.value)}
-                className="font-mono"
-                dir="auto"
-                data-testid="input-sessionTime"
-              />
-            </div>
+      {/* Title */}
+      <div className="fade-in-up fade-in-up-delay-1">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Scale className="w-5 h-5 text-primary" />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">ملاحظات</Label>
+          <div>
+            <h1 className="text-2xl font-bold font-mono tracking-tight">
+              {session.caseNumber || 'تفاصيل الجلسة'}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              تاريخ الإنشاء: {new Date(session.createdAt).toLocaleDateString('ar-SA')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Time Remaining */}
+      <div className="fade-in-up fade-in-up-delay-1">
+        <TimeRemainingCard hearingAt={session.hearingAt} />
+      </div>
+
+      {/* Form Card */}
+      <div className="fade-in-up fade-in-up-delay-2 rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-border bg-muted/20">
+          <p className="text-sm font-semibold">بيانات الجلسة</p>
+          <p className="text-xs text-muted-foreground mt-0.5">عدّل الحقول ثم اضغط حفظ</p>
+        </div>
+
+        <div className="p-5 space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {formFields.map((f) => (
+              <div key={f.key} className="space-y-1.5">
+                <Label htmlFor={f.key} className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {f.label}
+                </Label>
+                {f.type === 'select' ? (
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => updateField('status', value)}
+                  >
+                    <SelectTrigger id="status" className="h-9 text-sm" data-testid="select-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Upcoming">قادمة</SelectItem>
+                      <SelectItem value="Today">اليوم</SelectItem>
+                      <SelectItem value="Finished">منتهية</SelectItem>
+                      <SelectItem value="Cancelled">ملغية</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id={f.key}
+                    value={formData[f.key] || ''}
+                    onChange={(e) => updateField(f.key, e.target.value)}
+                    className={`${f.mono ? 'font-mono' : ''} h-9 text-sm`}
+                    dir={f.dir}
+                    data-testid={`input-${f.key}`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="notes" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              ملاحظات
+            </Label>
             <Textarea
               id="notes"
               value={formData.notes || ''}
               onChange={(e) => updateField('notes', e.target.value)}
               rows={4}
               dir="auto"
+              className="resize-none text-sm"
               data-testid="textarea-notes"
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="flex gap-3">
+      {/* Action Buttons */}
+      <div className="fade-in-up fade-in-up-delay-3 flex gap-3">
         <Button
           onClick={handleSave}
           disabled={updateMutation.isPending}
-          className="flex-1 gap-2"
+          className="flex-1 gap-2 shadow-sm"
           data-testid="button-save"
         >
           <Save className="w-4 h-4" />
           {updateMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
         </Button>
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
-              variant="destructive"
+              variant="outline"
               disabled={deleteMutation.isPending}
-              className="gap-2"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/8 hover:border-destructive/50"
               data-testid="button-delete"
             >
               <Trash2 className="w-4 h-4" />
@@ -350,7 +292,11 @@ export default function SessionDetailPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel data-testid="button-cancel-delete">إلغاء</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} data-testid="button-confirm-delete">
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive hover:bg-destructive/90"
+                data-testid="button-confirm-delete"
+              >
                 تأكيد الحذف
               </AlertDialogAction>
             </AlertDialogFooter>

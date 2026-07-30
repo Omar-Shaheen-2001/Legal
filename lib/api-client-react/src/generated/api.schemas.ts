@@ -166,3 +166,31 @@ export type ListSessionsParams = {
 status?: SessionStatus;
 };
 
+/**
+ * A session report written by the assigned lawyer after the hearing
+ */
+export interface SessionReport {
+  reportNumber: string;
+  lawyerName: string;
+  summary: string;
+  courtDecision: string;
+  nextSessionDate: string;
+  nextSessionTime: string;
+  ourActionRequired: string;
+  clientActionRequired: string;
+  reportDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionReportInput {
+  reportNumber?: string;
+  lawyerName?: string;
+  summary?: string;
+  courtDecision?: string;
+  nextSessionDate?: string;
+  nextSessionTime?: string;
+  ourActionRequired?: string;
+  clientActionRequired?: string;
+  reportDate?: string;
+}

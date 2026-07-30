@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, MessageSquare, Calendar, Moon, Sun, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Calendar, Moon, Sun, LogOut, Settings, Scale, FileText } from 'lucide-react';
 import { useTheme } from './theme-provider';
-import { Button } from '@/components/ui/button';
 import { useLogout } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +9,8 @@ const navigation = [
   { name: 'لوحة التحكم', path: '/', icon: LayoutDashboard },
   { name: 'تحليل رسالة', path: '/chat', icon: MessageSquare },
   { name: 'جميع الجلسات', path: '/sessions', icon: Calendar },
+  { name: 'تقارير الجلسات', path: '/reports', icon: FileText },
+  { name: 'الإعدادات', path: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -36,67 +37,153 @@ export function Sidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-sidebar border-s border-sidebar-border">
-      <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-lg font-semibold text-sidebar-foreground leading-snug">
-          إدارة جلسات المحكمة
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">بوابة السكرتير القانوني</p>
+    <div
+      className="flex flex-col h-full sidebar-gradient"
+      style={{
+        background: theme === 'dark'
+          ? 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 55%, #0f172a 100%)'
+          : 'linear-gradient(160deg, #1e3a8a 0%, #2d1b69 55%, #1e1b4b 100%)',
+        borderInlineStart: theme === 'dark'
+          ? '1px solid rgba(255,255,255,0.06)'
+          : '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      {/* Logo/Brand */}
+      <div
+        className="p-4"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <div className="flex items-center gap-2.5">
+          {/* Icon badge */}
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+            }}
+          >
+            <Scale className="w-4 h-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xs font-bold text-white leading-tight truncate">
+              إدارة جلسات المحكمة
+            </h1>
+            <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              بوابة السكرتير القانوني
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      {/* Navigation */}
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <p
+          className="text-[10px] font-semibold uppercase tracking-widest px-3 py-2"
+          style={{ color: 'rgba(255,255,255,0.35)' }}
+        >
+          القائمة الرئيسية
+        </p>
+
         {navigation.map((item) => {
           const isActive = location === item.path;
           const Icon = item.icon;
+
           return (
             <Link
               key={item.path}
               href={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              }`}
               data-testid={`nav-${item.path === '/' ? 'dashboard' : item.path.slice(1)}`}
             >
-              <Icon className="w-4 h-4 shrink-0" />
-              {item.name}
+              <div
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer"
+                style={
+                  isActive
+                    ? {
+                        background: 'rgba(255,255,255,0.18)',
+                        color: '#ffffff',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.2)',
+                      }
+                    : {
+                        color: 'rgba(255,255,255,0.6)',
+                      }
+                }
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)';
+                    (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.9)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLDivElement).style.background = '';
+                    (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.6)';
+                  }
+                }}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{item.name}</span>
+                {isActive && (
+                  <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: 'rgba(255,255,255,0.7)' }}
+                  />
+                )}
+              </div>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border space-y-2">
-        <Button
-          variant="outline"
-          size="sm"
+      {/* Footer actions */}
+      <div
+        className="p-3 space-y-1"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          className="w-full justify-start gap-3"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+          style={{ color: 'rgba(255,255,255,0.55)' }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.85)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '';
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.55)';
+          }}
           data-testid="button-toggle-theme"
         >
           {theme === 'light' ? (
             <>
-              <Moon className="w-4 h-4" />
+              <Moon className="w-4 h-4 shrink-0" />
               الوضع الداكن
             </>
           ) : (
             <>
-              <Sun className="w-4 h-4" />
+              <Sun className="w-4 h-4 shrink-0" />
               الوضع الفاتح
             </>
           )}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
+        </button>
+
+        <button
           onClick={handleLogout}
           disabled={logoutMutation.isPending}
-          className="w-full justify-start gap-3"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-40"
+          style={{ color: 'rgba(255,180,180,0.7)' }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.15)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,165,165,1)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = '';
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,180,180,0.7)';
+          }}
           data-testid="button-logout"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4 shrink-0" />
           {logoutMutation.isPending ? 'جارٍ الخروج...' : 'تسجيل الخروج'}
-        </Button>
+        </button>
       </div>
     </div>
   );

@@ -1,15 +1,17 @@
 import { logger } from "../../lib/logger";
 import { ConsoleReminderChannel } from "./channels/consoleChannel";
+import { WhatsappReminderChannel } from "./channels/whatsappChannel";
 import type { ReminderChannel, ReminderPayload } from "./reminder.types";
 
 /**
  * Fan-out point for reminder delivery. The scheduler calls `notify(...)`
  * once per triggered reminder; this service dispatches it to every
- * registered channel. Today that's just the console channel — future work
- * (WhatsApp/email/SMS/push) is additive: implement `ReminderChannel` and
- * push an instance into `channels` below.
+ * registered channel (Console & WhatsApp).
  */
-const channels: ReminderChannel[] = [new ConsoleReminderChannel()];
+const channels: ReminderChannel[] = [
+  new ConsoleReminderChannel(),
+  new WhatsappReminderChannel(),
+];
 
 export async function notify(payload: ReminderPayload): Promise<void> {
   await Promise.all(

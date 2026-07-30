@@ -47,3 +47,16 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Secrets and local runtime settings
+service-account.json
+artifacts/api-server/settings.json
+*.env
+*.pem
+
+# Scratch & test scripts
+scratch_*
+test-*
+test_*
+artifacts/api-server/scratch_hf.cjs
+

@@ -35,6 +35,11 @@ async function runReminderSweep(): Promise<void> {
         sessionDateHijri: session.sessionDateHijri,
         sessionTime: session.sessionTime,
         kind: "24h",
+        court: session.court,
+        courtCircuit: session.courtCircuit,
+        plaintiff: session.plaintiff,
+        defendant: session.defendant,
+        caseSubject: session.caseSubject,
       });
       await markReminderSent(session.id, "24h");
     }
@@ -46,6 +51,11 @@ async function runReminderSweep(): Promise<void> {
         sessionDateHijri: session.sessionDateHijri,
         sessionTime: session.sessionTime,
         kind: "6h",
+        court: session.court,
+        courtCircuit: session.courtCircuit,
+        plaintiff: session.plaintiff,
+        defendant: session.defendant,
+        caseSubject: session.caseSubject,
       });
       await markReminderSent(session.id, "6h");
     }

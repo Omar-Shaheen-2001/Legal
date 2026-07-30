@@ -10,6 +10,9 @@ import DashboardPage from '@/pages/dashboard';
 import ChatPage from '@/pages/chat';
 import SessionsPage from '@/pages/sessions';
 import SessionDetailPage from '@/pages/session-detail';
+import SettingsPage from '@/pages/settings';
+import ReportsPage from '@/pages/reports';
+import SessionReportPage from '@/pages/session-report';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient({
@@ -63,6 +66,27 @@ function Router() {
         <AuthGuard>
           <AppShell>
             <SessionDetailPage />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+      <Route path="/settings">
+        <AuthGuard>
+          <AppShell>
+            <SettingsPage />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+      <Route path="/reports">
+        <AuthGuard>
+          <AppShell>
+            <ReportsPage />
+          </AppShell>
+        </AuthGuard>
+      </Route>
+      <Route path="/reports/:id">
+        <AuthGuard>
+          <AppShell>
+            <SessionReportPage />
           </AppShell>
         </AuthGuard>
       </Route>

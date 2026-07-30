@@ -4,12 +4,11 @@
  * a real JavaScript Date so the reminder scheduler can compute "24 hours
  * before" / "6 hours before" windows.
  *
- * The conversion uses the tabular (civil) Islamic calendar algorithm. It is
- * an approximation of the Umm al-Qura calendar (off by at most a day around
- * some month boundaries) — acceptable for scheduling reminders, but not
- * intended as a religious/astronomical calendar authority.
+ * The conversion uses `moment-hijri` which accurately implements the
+ * Umm al-Qura calendar used in Saudi Arabia.
  */
 
+import moment from "moment-hijri";
 import { env } from "../config/env";
 
 const ARABIC_INDIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
@@ -25,19 +24,60 @@ export interface HijriDate {
 }
 
 /** Parses a "DD/MM/YYYY" (or "D/M/YYYY") Hijri date string. Returns null if unparseable. */
-export function parseHijriDateString(input: string): HijriDate | null {
+export function parseHijriDateString(input: string | null | undefined): HijriDate | null {
+  if (!input || typeof input !== "string") {
+    return null;
+  }
   const normalized = normalizeDigits(input.trim());
-  const match = normalized.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{3,4})$/);
-  if (!match) {
+  if (!normalized) {
     return null;
   }
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = Number(match[3]);
-  if (month < 1 || month > 12 || day < 1 || day > 30) {
-    return null;
+
+  // Pass single format strings instead of an array because `moment-hijri`'s array-format overload returns `undefined` when none match
+  const formats = [
+    "iDD/iMM/iYYYY",
+    "iD/iM/iYYYY",
+    "iDD-iMM-iYYYY",
+    "iD-iM-iYYYY",
+    "iYYYY/iMM/iDD",
+    "iYYYY-iMM-iDD",
+  ];
+
+  // Try strict parsing first
+  for (const fmt of formats) {
+    try {
+      const m = moment(normalized, fmt, true);
+      if (m && typeof m.isValid === "function" && m.isValid()) {
+        const year = m.iYear();
+        const month = m.iMonth() + 1;
+        const day = m.iDate();
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day) && year > 1300 && year < 1600 && month >= 1 && month <= 12 && day >= 1 && day <= 30) {
+          return { year, month, day };
+        }
+      }
+    } catch {
+      // ignore parsing error for single format
+    }
   }
-  return { year, month, day };
+
+  // Try non-strict parsing as fallback
+  for (const fmt of formats) {
+    try {
+      const m = moment(normalized, fmt);
+      if (m && typeof m.isValid === "function" && m.isValid()) {
+        const year = m.iYear();
+        const month = m.iMonth() + 1;
+        const day = m.iDate();
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day) && year > 1300 && year < 1600 && month >= 1 && month <= 12 && day >= 1 && day <= 30) {
+          return { year, month, day };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
 }
 
 export interface ParsedTime {
@@ -72,96 +112,41 @@ export function parseArabicTime(input: string): ParsedTime | null {
   return { hours, minutes };
 }
 
-/** Converts a Hijri calendar date to a Julian Day Number using the tabular (civil) algorithm. */
-function hijriToJulianDayNumber({ year, month, day }: HijriDate): number {
-  return (
-    Math.floor((11 * year + 3) / 30) +
-    354 * year +
-    30 * month -
-    Math.floor((month - 1) / 2) +
-    day +
-    1948440 -
-    385
-  );
-}
-
-/** Converts a Julian Day Number to a proleptic Gregorian calendar date. */
-function julianDayNumberToGregorian(jdn: number): {
-  year: number;
-  month: number;
-  day: number;
-} {
-  let l = jdn + 68569;
-  const n = Math.floor((4 * l) / 146097);
-  l = l - Math.floor((146097 * n + 3) / 4);
-  const i = Math.floor((4000 * (l + 1)) / 1461001);
-  l = l - Math.floor((1461 * i) / 4) + 31;
-  const j = Math.floor((80 * l) / 2447);
-  const day = l - Math.floor((2447 * j) / 80);
-  l = Math.floor(j / 11);
-  const month = j + 2 - 12 * l;
-  const year = 100 * (n - 49) + i + l;
-  return { year, month, day };
-}
-
 export function hijriToGregorian(hijri: HijriDate): {
   year: number;
   month: number;
   day: number;
-} {
-  return julianDayNumberToGregorian(hijriToJulianDayNumber(hijri));
-}
-
-/** Converts a proleptic Gregorian calendar date to a Julian Day Number. */
-function gregorianToJulianDayNumber(
-  year: number,
-  month: number,
-  day: number,
-): number {
-  const a = Math.floor((14 - month) / 12);
-  const y = year + 4800 - a;
-  const m = month + 12 * a - 3;
-  return (
-    day +
-    Math.floor((153 * m + 2) / 5) +
-    365 * y +
-    Math.floor(y / 4) -
-    Math.floor(y / 100) +
-    Math.floor(y / 400) -
-    32045
-  );
-}
-
-/** Converts a Julian Day Number to a Hijri (tabular/civil) date. */
-function julianDayNumberToHijri(jdn: number): HijriDate {
-  let l = jdn - 1948440 + 10632;
-  const n = Math.floor((l - 1) / 10631);
-  l = l - 10631 * n + 354;
-  const j =
-    Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) +
-    Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
-  l =
-    l -
-    Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
-    Math.floor(j / 16) * Math.floor((15238 * j) / 43) +
-    29;
-  const year = 30 * n + j - 30;
-  const month = Math.floor((24 * l) / 709);
-  const day = l - Math.floor((709 * month) / 24);
-  return { year, month, day };
+} | null {
+  try {
+    const dateString = `${hijri.year}/${String(hijri.month).padStart(2, "0")}/${String(hijri.day).padStart(2, "0")}`;
+    const m = moment(dateString, "iYYYY/iMM/iDD");
+    if (!m || typeof m.isValid !== "function" || !m.isValid()) {
+      return null;
+    }
+    const year = m.year();
+    const month = m.month() + 1;
+    const day = m.date();
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      return null;
+    }
+    return { year, month, day };
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Converts a Gregorian Date object to the corresponding Hijri (tabular/civil)
- * calendar date. Uses UTC date components to avoid timezone issues.
+ * Converts a Gregorian Date object to the corresponding Hijri
+ * calendar date using Umm al-Qura. Uses UTC date components.
  */
 export function gregorianToHijri(date: Date): HijriDate {
-  const jdn = gregorianToJulianDayNumber(
-    date.getUTCFullYear(),
-    date.getUTCMonth() + 1,
-    date.getUTCDate(),
-  );
-  return julianDayNumberToHijri(jdn);
+  // Convert UTC components into a moment representation ignoring timezone shifts
+  const m = moment([date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()]);
+  return {
+    year: m.iYear(),
+    month: m.iMonth() + 1,
+    day: m.iDate(),
+  };
 }
 
 /**
@@ -170,6 +155,7 @@ export function gregorianToHijri(date: Date): HijriDate {
  */
 export function currentHijriDateString(): string {
   const offsetHours = env.courtTimezoneOffsetHours;
+  // Shift the time to the local court timezone
   const localNow = new Date(Date.now() + offsetHours * 3600 * 1000);
   const h = gregorianToHijri(localNow);
   const dd = String(h.day).padStart(2, "0");
@@ -190,20 +176,28 @@ export function computeHearingDateTime(
   if (!sessionDateHijri || !sessionTime) {
     return null;
   }
-  const hijriDate = parseHijriDateString(sessionDateHijri);
-  const time = parseArabicTime(sessionTime);
-  if (!hijriDate || !time) {
+  try {
+    const hijriDate = parseHijriDateString(sessionDateHijri);
+    const time = parseArabicTime(sessionTime);
+    if (!hijriDate || !time) {
+      return null;
+    }
+    const gregorian = hijriToGregorian(hijriDate);
+    if (!gregorian) {
+      return null;
+    }
+    const offsetHours = env.courtTimezoneOffsetHours;
+    const hearingDate = new Date(
+      Date.UTC(
+        gregorian.year,
+        gregorian.month - 1,
+        gregorian.day,
+        time.hours - offsetHours,
+        time.minutes,
+      ),
+    );
+    return isNaN(hearingDate.getTime()) ? null : hearingDate;
+  } catch {
     return null;
   }
-  const gregorian = hijriToGregorian(hijriDate);
-  const offsetHours = env.courtTimezoneOffsetHours;
-  return new Date(
-    Date.UTC(
-      gregorian.year,
-      gregorian.month - 1,
-      gregorian.day,
-      time.hours - offsetHours,
-      time.minutes,
-    ),
-  );
 }
