@@ -1,7 +1,7 @@
 {
   "version": 2,
   "buildCommand": "pnpm --filter @workspace/court-session-management build",
-  "outputDirectory": "artifacts/court-session-management/dist/public",
+  "outputDirectory": "artifacts/court-session-management/dist",
   "rewrites": [
     {
       "source": "/(.*)",
