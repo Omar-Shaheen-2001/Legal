@@ -8,18 +8,20 @@ import { env } from "./config/env";
 
 const app: Express = express();
 
+const pinoHttpMiddleware = (typeof pinoHttp === "function" ? pinoHttp : (pinoHttp as any).default || pinoHttp) as typeof pinoHttp;
+
 app.use(
-  pinoHttp({
+  pinoHttpMiddleware({
     logger,
     serializers: {
-      req(req) {
+      req(req: any) {
         return {
           id: req.id,
           method: req.method,
           url: req.url?.split("?")[0],
         };
       },
-      res(res) {
+      res(res: any) {
         return {
           statusCode: res.statusCode,
         };
