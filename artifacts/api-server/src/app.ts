@@ -8,7 +8,7 @@ import { env } from "./config/env";
 
 const app: Express = express();
 
-const pinoHttpMiddleware = (typeof pinoHttp === "function" ? pinoHttp : (pinoHttp as any).default || pinoHttp) as typeof pinoHttp;
+const pinoHttpMiddleware: any = (pinoHttp as any).default || pinoHttp;
 
 app.use(
   pinoHttpMiddleware({
