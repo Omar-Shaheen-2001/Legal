@@ -314,7 +314,7 @@ export default function SessionReportPage() {
         jsPDF: {
           unit: 'mm',
           format: 'a4',
-          orientation: 'portrait',
+          orientation: 'portrait' as const,
         },
       };
 

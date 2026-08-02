@@ -1,19 +1,22 @@
+import React, { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthGuard } from '@/components/auth-guard';
 import { Sidebar } from '@/components/sidebar';
-import NotFound from '@/pages/not-found';
-import LoginPage from '@/pages/login';
-import DashboardPage from '@/pages/dashboard';
-import ChatPage from '@/pages/chat';
-import SessionsPage from '@/pages/sessions';
-import SessionDetailPage from '@/pages/session-detail';
-import SettingsPage from '@/pages/settings';
-import ReportsPage from '@/pages/reports';
-import SessionReportPage from '@/pages/session-report';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
+
+const NotFound = React.lazy(() => import('@/pages/not-found'));
+const LoginPage = React.lazy(() => import('@/pages/login'));
+const DashboardPage = React.lazy(() => import('@/pages/dashboard'));
+const ChatPage = React.lazy(() => import('@/pages/chat'));
+const SessionsPage = React.lazy(() => import('@/pages/sessions'));
+const SessionDetailPage = React.lazy(() => import('@/pages/session-detail'));
+const SettingsPage = React.lazy(() => import('@/pages/settings'));
+const ReportsPage = React.lazy(() => import('@/pages/reports'));
+const SessionReportPage = React.lazy(() => import('@/pages/session-report'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,7 +34,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar />
       </aside>
       <main className="flex-1 overflow-y-auto">
-        {children}
+        <ErrorBoundary>
+          <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+            {children}
+          </Suspense>
+        </ErrorBoundary>
       </main>
     </div>
   );
@@ -40,7 +47,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={LoginPage} />
+      <Route path="/login">
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+          <LoginPage />
+        </Suspense>
+      </Route>
       <Route path="/">
         <AuthGuard>
           <AppShell>
@@ -90,23 +101,29 @@ function Router() {
           </AppShell>
         </AuthGuard>
       </Route>
-      <Route component={NotFound} />
+      <Route>
+        <Suspense fallback={<div />}>
+          <NotFound />
+        </Suspense>
+      </Route>
     </Switch>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
