@@ -1,14 +1,12 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/court-session-management build && node scripts/copy-dist.js",
-  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api",
+      "source": "/api/(.*)",
       "destination": "/api/index"
     },
     {
-      "source": "/api/(.*)",
+      "source": "/api",
       "destination": "/api/index"
     },
     {
