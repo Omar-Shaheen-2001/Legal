@@ -303,7 +303,7 @@ export default function SessionReportPage() {
       const opt = {
         margin: [0, 0, 0, 0] as [number, number, number, number],
         filename: filename,
-        image: { type: 'jpeg', quality: 1.0 },
+        image: { type: 'jpeg' as const, quality: 1.0 },
         html2canvas: {
           scale: 3,
           useCORS: true,

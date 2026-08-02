@@ -90,10 +90,18 @@ function sheetName(): string {
   return (_settings["googleSheetName"] || GOOGLE_SHEET_NAME || "Sessions").trim();
 }
 
+// ── URL Normalization Middleware ────────────────────────────────────────────
+app.use((req, _res, next) => {
+  if (!req.url.startsWith("/api") && !req.url.startsWith("/favicon")) {
+    req.url = "/api" + (req.url.startsWith("/") ? req.url : "/" + req.url);
+  }
+  next();
+});
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 // Health
-app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+app.get(["/api/health", "/api/healthz"], (_req, res) => res.json({ status: "ok" }));
 
 // Auth - Login
 app.post("/api/auth/login", (req, res) => {
@@ -300,7 +308,7 @@ app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
 });
 
 // Dashboard
-app.get("/api/dashboard", attachAuth, requireAuth, async (_req, res) => {
+app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, async (_req, res) => {
   const sid = spreadsheetId();
   if (!sid) { res.json({ totalSessions: 0, upcomingSessions: 0, completedSessions: 0, cancelledSessions: 0 }); return; }
   try {
@@ -322,7 +330,7 @@ app.get("/api/dashboard", attachAuth, requireAuth, async (_req, res) => {
 });
 
 // AI chat
-app.post("/api/ai/extract", attachAuth, requireAuth, async (req, res) => {
+app.post(["/api/ai/extract", "/api/ai/analyze"], attachAuth, requireAuth, async (req, res) => {
   const aiApiKey = _settings["aiApiKey"] || readEnv("AI_API_KEY") || "";
   const aiBaseUrl = _settings["aiBaseUrl"] || readEnv("AI_BASE_URL") || "https://openrouter.ai/api/v1";
   const aiModel = _settings["aiModel"] || readEnv("AI_MODEL") || "google/gemini-2.5-flash";
@@ -339,3 +347,4 @@ app.post("/api/ai/extract", attachAuth, requireAuth, async (req, res) => {
 });
 
 export default app;
+
