@@ -301,7 +301,7 @@ export default function SessionReportPage() {
       const filename = `تقرير_جلسة_${form.caseNumber || id}_${form.reportDate || '1446'}.pdf`;
 
       const opt = {
-        margin: [0, 0, 0, 0],
+        margin: [0, 0, 0, 0] as [number, number, number, number],
         filename: filename,
         image: { type: 'jpeg', quality: 1.0 },
         html2canvas: {

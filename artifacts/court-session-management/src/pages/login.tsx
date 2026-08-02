@@ -23,10 +23,15 @@ export default function LoginPage() {
         onSuccess: () => {
           setLocation('/');
         },
-        onError: () => {
+        onError: (error: any) => {
+          const detail = error?.data?.error || error?.message;
+          let description = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+          if (detail && detail !== 'Invalid username or password.') {
+            description = `خطأ في الاتصال بالخادم: ${detail}`;
+          }
           toast({
             title: 'فشل تسجيل الدخول',
-            description: 'اسم المستخدم أو كلمة المرور غير صحيحة',
+            description,
             variant: 'destructive',
           });
         },
