@@ -91,7 +91,7 @@ function sheetName(): string {
 }
 
 // ── URL Normalization Middleware ────────────────────────────────────────────
-app.use((req, _res, next) => {
+app.use((req: express.Request, _res: express.Response, next: express.NextFunction) => {
   if (!req.url.startsWith("/api") && !req.url.startsWith("/favicon")) {
     req.url = "/api" + (req.url.startsWith("/") ? req.url : "/" + req.url);
   }
@@ -101,10 +101,10 @@ app.use((req, _res, next) => {
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 // Health
-app.get(["/api/health", "/api/healthz"], (_req, res) => res.json({ status: "ok" }));
+app.get(["/api/health", "/api/healthz"], (_req: express.Request, res: express.Response) => res.json({ status: "ok" }));
 
 // Auth - Login
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", (req: express.Request, res: express.Response) => {
   const { username, password } = req.body ?? {};
   if (!username || !password) {
     res.status(400).json({ error: "Username and password are required." });
@@ -119,18 +119,18 @@ app.post("/api/auth/login", (req, res) => {
 });
 
 // Auth - Logout
-app.post("/api/auth/logout", (_req, res) => {
+app.post("/api/auth/logout", (_req: express.Request, res: express.Response) => {
   res.clearCookie(COOKIE, { path: "/" });
   res.status(204).send();
 });
 
 // Auth - Me
-app.get("/api/auth/me", attachAuth, requireAuth, (req, res) => {
+app.get("/api/auth/me", attachAuth, requireAuth, (req: express.Request, res: express.Response) => {
   res.json({ username: (req as any).authUser.username });
 });
 
 // Settings - Get
-app.get("/api/settings", attachAuth, requireAuth, (_req, res) => {
+app.get("/api/settings", attachAuth, requireAuth, (_req: express.Request, res: express.Response) => {
   const mask = (v?: string) => v ? v.slice(0, 6) + "***" : "";
   const s = _settings;
   res.json({
@@ -152,7 +152,7 @@ app.get("/api/settings", attachAuth, requireAuth, (_req, res) => {
 });
 
 // Settings - Put
-app.put("/api/settings", attachAuth, requireAuth, (req, res) => {
+app.put("/api/settings", attachAuth, requireAuth, (req: express.Request, res: express.Response) => {
   const allowed = ["aiApiKey","aiModel","aiBaseUrl","googleSpreadsheetId","googleSheetName","hfApiToken","hfModel","whatsappNumber","whatsappApiUrl","whatsappToken","whatsappInstanceId"];
   const body = req.body ?? {};
   for (const key of allowed) {
@@ -182,7 +182,7 @@ app.put("/api/settings", attachAuth, requireAuth, (req, res) => {
 });
 
 // Sessions - List
-app.get("/api/sessions", attachAuth, requireAuth, async (req, res) => {
+app.get("/api/sessions", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   try {
@@ -206,7 +206,7 @@ app.get("/api/sessions", attachAuth, requireAuth, async (req, res) => {
 });
 
 // Sessions - Create
-app.post("/api/sessions", attachAuth, requireAuth, async (req, res) => {
+app.post("/api/sessions", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   try {
@@ -233,7 +233,7 @@ app.post("/api/sessions", attachAuth, requireAuth, async (req, res) => {
 });
 
 // Sessions - Get by ID
-app.get("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
+app.get("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   const id = Number(req.params.id);
@@ -255,7 +255,7 @@ app.get("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
 });
 
 // Sessions - Update
-app.patch("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
+app.patch("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   const id = Number(req.params.id);
@@ -281,14 +281,14 @@ app.patch("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
 });
 
 // Sessions - Delete
-app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
+app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   const id = Number(req.params.id);
   try {
     const sheets = await getSheets();
     const metaResp = await sheets.spreadsheets.get({ spreadsheetId: sid });
-    const sheet = metaResp.data.sheets?.find((s) => s.properties?.title === sheetName());
+    const sheet = metaResp.data.sheets?.find((s: any) => s.properties?.title === sheetName());
     const sheetId = sheet?.properties?.sheetId ?? 0;
     const rowIndex = id; // 0-indexed after header (id=1 → row index 1)
     await sheets.spreadsheets.batchUpdate({
@@ -308,7 +308,7 @@ app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req, res) => {
 });
 
 // Dashboard
-app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, async (_req, res) => {
+app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, async (_req: express.Request, res: express.Response) => {
   const sid = spreadsheetId();
   if (!sid) { res.json({ totalSessions: 0, upcomingSessions: 0, completedSessions: 0, cancelledSessions: 0 }); return; }
   try {
@@ -320,9 +320,9 @@ app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, asy
     const [headers, ...dataRows] = rows;
     const statusIdx = (headers as string[]).indexOf("status");
     const total = dataRows.length;
-    const upcoming = statusIdx >= 0 ? dataRows.filter((r) => r[statusIdx] === "upcoming").length : 0;
-    const completed = statusIdx >= 0 ? dataRows.filter((r) => r[statusIdx] === "completed").length : 0;
-    const cancelled = statusIdx >= 0 ? dataRows.filter((r) => r[statusIdx] === "cancelled").length : 0;
+    const upcoming = statusIdx >= 0 ? dataRows.filter((r: any) => r[statusIdx] === "upcoming").length : 0;
+    const completed = statusIdx >= 0 ? dataRows.filter((r: any) => r[statusIdx] === "completed").length : 0;
+    const cancelled = statusIdx >= 0 ? dataRows.filter((r: any) => r[statusIdx] === "cancelled").length : 0;
     res.json({ totalSessions: total, upcomingSessions: upcoming, completedSessions: completed, cancelledSessions: cancelled });
   } catch (err: any) {
     res.status(500).json({ error: "Failed to load dashboard.", detail: err.message });
@@ -330,7 +330,7 @@ app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, asy
 });
 
 // AI chat
-app.post(["/api/ai/extract", "/api/ai/analyze"], attachAuth, requireAuth, async (req, res) => {
+app.post(["/api/ai/extract", "/api/ai/analyze"], attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
   const aiApiKey = _settings["aiApiKey"] || readEnv("AI_API_KEY") || "";
   const aiBaseUrl = _settings["aiBaseUrl"] || readEnv("AI_BASE_URL") || "https://openrouter.ai/api/v1";
   const aiModel = _settings["aiModel"] || readEnv("AI_MODEL") || "google/gemini-2.5-flash";
