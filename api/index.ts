@@ -36,7 +36,7 @@ const COOKIE = "court_session_auth";
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const IS_PROD = process.env.NODE_ENV === "production";
 
-function setSessionCookie(res: express.Response, username: string) {
+function setSessionCookie(res: any, username: string) {
   const payload = JSON.stringify({ username, issuedAt: Date.now() });
   res.cookie(COOKIE, payload, {
     httpOnly: true,
@@ -48,7 +48,7 @@ function setSessionCookie(res: express.Response, username: string) {
   });
 }
 
-function readSessionCookie(req: express.Request): { username: string } | null {
+function readSessionCookie(req: any): { username: string } | null {
   const raw = req.signedCookies?.[COOKIE] as string | undefined;
   if (!raw) return null;
   try {
@@ -59,13 +59,13 @@ function readSessionCookie(req: express.Request): { username: string } | null {
   } catch { return null; }
 }
 
-function attachAuth(req: express.Request, _res: express.Response, next: express.NextFunction) {
-  (req as any).authUser = readSessionCookie(req) ?? undefined;
+function attachAuth(req: any, _res: any, next: any) {
+  req.authUser = readSessionCookie(req) ?? undefined;
   next();
 }
 
-function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-  if (!(req as any).authUser) {
+function requireAuth(req: any, res: any, next: any) {
+  if (!req.authUser) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
@@ -79,7 +79,7 @@ async function getSheets() {
     credentials: googleServiceAccount,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
-  return google.sheets({ version: "v4", auth });
+  return (google as any).sheets({ version: "v4", auth });
 }
 
 function spreadsheetId(): string {
@@ -91,7 +91,7 @@ function sheetName(): string {
 }
 
 // ── URL Normalization Middleware ────────────────────────────────────────────
-app.use((req: express.Request, _res: express.Response, next: express.NextFunction) => {
+app.use((req: any, _res: any, next: any) => {
   if (!req.url.startsWith("/api") && !req.url.startsWith("/favicon")) {
     req.url = "/api" + (req.url.startsWith("/") ? req.url : "/" + req.url);
   }
@@ -101,10 +101,10 @@ app.use((req: express.Request, _res: express.Response, next: express.NextFunctio
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 // Health
-app.get(["/api/health", "/api/healthz"], (_req: express.Request, res: express.Response) => res.json({ status: "ok" }));
+app.get(["/api/health", "/api/healthz"], (_req: any, res: any) => res.json({ status: "ok" }));
 
 // Auth - Login
-app.post("/api/auth/login", (req: express.Request, res: express.Response) => {
+app.post("/api/auth/login", (req: any, res: any) => {
   const { username, password } = req.body ?? {};
   if (!username || !password) {
     res.status(400).json({ error: "Username and password are required." });
@@ -119,18 +119,18 @@ app.post("/api/auth/login", (req: express.Request, res: express.Response) => {
 });
 
 // Auth - Logout
-app.post("/api/auth/logout", (_req: express.Request, res: express.Response) => {
+app.post("/api/auth/logout", (_req: any, res: any) => {
   res.clearCookie(COOKIE, { path: "/" });
   res.status(204).send();
 });
 
 // Auth - Me
-app.get("/api/auth/me", attachAuth, requireAuth, (req: express.Request, res: express.Response) => {
-  res.json({ username: (req as any).authUser.username });
+app.get("/api/auth/me", attachAuth, requireAuth, (req: any, res: any) => {
+  res.json({ username: req.authUser.username });
 });
 
 // Settings - Get
-app.get("/api/settings", attachAuth, requireAuth, (_req: express.Request, res: express.Response) => {
+app.get("/api/settings", attachAuth, requireAuth, (_req: any, res: any) => {
   const mask = (v?: string) => v ? v.slice(0, 6) + "***" : "";
   const s = _settings;
   res.json({
@@ -152,7 +152,7 @@ app.get("/api/settings", attachAuth, requireAuth, (_req: express.Request, res: e
 });
 
 // Settings - Put
-app.put("/api/settings", attachAuth, requireAuth, (req: express.Request, res: express.Response) => {
+app.put("/api/settings", attachAuth, requireAuth, (req: any, res: any) => {
   const allowed = ["aiApiKey","aiModel","aiBaseUrl","googleSpreadsheetId","googleSheetName","hfApiToken","hfModel","whatsappNumber","whatsappApiUrl","whatsappToken","whatsappInstanceId"];
   const body = req.body ?? {};
   for (const key of allowed) {
@@ -182,7 +182,7 @@ app.put("/api/settings", attachAuth, requireAuth, (req: express.Request, res: ex
 });
 
 // Sessions - List
-app.get("/api/sessions", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
+app.get("/api/sessions", attachAuth, requireAuth, async (req: any, res: any) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   try {
@@ -206,7 +206,7 @@ app.get("/api/sessions", attachAuth, requireAuth, async (req: express.Request, r
 });
 
 // Sessions - Create
-app.post("/api/sessions", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
+app.post("/api/sessions", attachAuth, requireAuth, async (req: any, res: any) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   try {
@@ -233,7 +233,7 @@ app.post("/api/sessions", attachAuth, requireAuth, async (req: express.Request, 
 });
 
 // Sessions - Get by ID
-app.get("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
+app.get("/api/sessions/:id", attachAuth, requireAuth, async (req: any, res: any) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   const id = Number(req.params.id);
@@ -255,7 +255,7 @@ app.get("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Reques
 });
 
 // Sessions - Update
-app.patch("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
+app.patch("/api/sessions/:id", attachAuth, requireAuth, async (req: any, res: any) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   const id = Number(req.params.id);
@@ -281,7 +281,7 @@ app.patch("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Requ
 });
 
 // Sessions - Delete
-app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
+app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req: any, res: any) => {
   const sid = spreadsheetId();
   if (!sid) { res.status(500).json({ error: "Google Sheets is not configured." }); return; }
   const id = Number(req.params.id);
@@ -308,7 +308,7 @@ app.delete("/api/sessions/:id", attachAuth, requireAuth, async (req: express.Req
 });
 
 // Dashboard
-app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, async (_req: express.Request, res: express.Response) => {
+app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, async (_req: any, res: any) => {
   const sid = spreadsheetId();
   if (!sid) { res.json({ totalSessions: 0, upcomingSessions: 0, completedSessions: 0, cancelledSessions: 0 }); return; }
   try {
@@ -330,7 +330,7 @@ app.get(["/api/dashboard", "/api/dashboard/stats"], attachAuth, requireAuth, asy
 });
 
 // AI chat
-app.post(["/api/ai/extract", "/api/ai/analyze"], attachAuth, requireAuth, async (req: express.Request, res: express.Response) => {
+app.post(["/api/ai/extract", "/api/ai/analyze"], attachAuth, requireAuth, async (req: any, res: any) => {
   const aiApiKey = _settings["aiApiKey"] || readEnv("AI_API_KEY") || "";
   const aiBaseUrl = _settings["aiBaseUrl"] || readEnv("AI_BASE_URL") || "https://openrouter.ai/api/v1";
   const aiModel = _settings["aiModel"] || readEnv("AI_MODEL") || "google/gemini-2.5-flash";
@@ -347,4 +347,3 @@ app.post(["/api/ai/extract", "/api/ai/analyze"], attachAuth, requireAuth, async 
 });
 
 export default app;
-
