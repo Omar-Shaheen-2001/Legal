@@ -10,12 +10,25 @@ const candidates = [
 
 let src = null;
 for (const cand of candidates) {
-  if (fs.existsSync(cand) && fs.existsSync(path.join(cand, 'index.html'))) {
-    src = cand;
+  const resolved = path.resolve(cand);
+  if (fs.existsSync(resolved) && fs.existsSync(path.join(resolved, 'index.html'))) {
+    src = resolved;
     break;
   }
 }
 
-if (src && src !== 'dist') {
-  fs.cpSync(src, 'dist', { recursive: true });
+const targetDist = path.resolve('dist');
+
+if (src) {
+  if (src !== targetDist) {
+    fs.mkdirSync(targetDist, { recursive: true });
+    fs.cpSync(src, targetDist, { recursive: true });
+    console.log(`[copy-dist] Successfully copied build output from ${src} to ${targetDist}`);
+  } else {
+    console.log(`[copy-dist] Build output already at ${targetDist}`);
+  }
+} else {
+  console.error('[copy-dist] Error: Could not find build output index.html in candidates:', candidates);
+  process.exit(1);
 }
+
