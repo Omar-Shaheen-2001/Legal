@@ -3,7 +3,14 @@ import { logger } from "../../../lib/logger";
 import type { ReminderChannel, ReminderPayload } from "../reminder.types";
 
 export function formatWhatsappMessage(payload: ReminderPayload): string {
-  const timeDesc = payload.kind === "24h" ? "متبقي 24 ساعة" : "متبقي 6 ساعات";
+  const timeDesc = payload.remainingText
+    ? payload.remainingText
+    : payload.kind === "24h"
+    ? "متبقي 24 ساعة"
+    : payload.kind === "6h"
+    ? "متبقي 6 ساعات"
+    : "تذكير فوري";
+
   const lines: string[] = [
     `🔔 *تذكير بموعد جلسة قضائية* (${timeDesc})`,
     "",
@@ -144,11 +151,7 @@ export class WhatsappReminderChannel implements ReminderChannel {
     const phone = settings.whatsappNumber?.trim();
 
     if (!phone) {
-      logger.info(
-        { sessionId: payload.sessionId, kind: payload.kind },
-        "WhatsApp reminder skipped: No whatsappNumber configured in Settings.",
-      );
-      return;
+      throw new Error("لم يتم إدخال رقم الواتساب في صفحة الإعدادات.");
     }
 
     const message = formatWhatsappMessage(payload);

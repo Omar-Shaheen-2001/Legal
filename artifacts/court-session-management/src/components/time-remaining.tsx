@@ -97,10 +97,31 @@ export function TimeRemainingBadge({ hearingAt, variant = 'compact' }: TimeRemai
   );
 }
 
+/** Live clock – ticks every second, always reflects Mecca time (UTC+3). */
+function useLiveClock() {
+  const getMeccaTime = () => {
+    const now = new Date(Date.now() + 3 * 3600 * 1000); // shift to UTC+3
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+    const ss = String(now.getUTCSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  };
+
+  const [time, setTime] = useState(getMeccaTime);
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(getMeccaTime()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return time;
+}
+
 /** Full countdown block shown in session detail page */
 export function TimeRemainingCard({ hearingAt }: { hearingAt: string | null | undefined }) {
   const remaining = useCountdown(hearingAt);
   const currentHijri = nowHijri();
+  const liveTime = useLiveClock();
 
   const urgencyClass = !remaining
     ? 'border-border bg-muted/30'
@@ -114,10 +135,17 @@ export function TimeRemainingCard({ hearingAt }: { hearingAt: string | null | un
 
   return (
     <div className={`rounded-lg border p-4 space-y-3 ${urgencyClass}`}>
-      {/* Current Hijri date */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-        <span>التاريخ الهجري الحالي: <span className="font-medium text-foreground">{formatHijriLong(currentHijri)}</span></span>
+      {/* Current Hijri date + live clock */}
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+          <span>التاريخ الهجري الحالي: <span className="font-medium text-foreground">{formatHijriLong(currentHijri)}</span></span>
+        </div>
+        {/* Live Mecca clock */}
+        <div className="flex items-center gap-1.5 font-mono text-sm font-semibold text-foreground tabular-nums">
+          <Clock className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+          <span>{liveTime}</span>
+        </div>
       </div>
 
       {!remaining ? (
@@ -161,6 +189,7 @@ export function TimeRemainingCard({ hearingAt }: { hearingAt: string | null | un
     </div>
   );
 }
+
 
 function CountBox({ value, label, highlight }: { value: number; label: string; highlight: boolean }) {
   return (

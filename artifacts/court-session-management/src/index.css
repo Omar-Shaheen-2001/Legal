@@ -69,53 +69,59 @@
 
   --opaque-button-border-intensity: -8;
 
-  --elevate-1: rgba(0, 0, 0, 0.03);
-  --elevate-2: rgba(0, 0, 0, 0.08);
+  --elevate-1: rgba(15, 39, 71, 0.04);
+  --elevate-2: rgba(15, 39, 71, 0.08);
 
-  --background: 220 25% 97%;
-  --foreground: 222 30% 12%;
+  /* Background: الأبيض (#FFFFFF) */
+  --background: 0 0% 100%;
+  /* Foreground / Text: الرمادي الداكن (#4B4B4B) */
+  --foreground: 0 0% 29%;
 
-  --border: 220 20% 88%;
+  --border: 0 0% 88%;
 
   --card: 0 0% 100%;
-  --card-foreground: 222 30% 12%;
-  --card-border: 220 20% 90%;
+  --card-foreground: 0 0% 29%;
+  --card-border: 0 0% 90%;
 
-  --sidebar: 222 35% 14%;
-  --sidebar-foreground: 210 25% 88%;
-  --sidebar-border: 222 30% 20%;
-  --sidebar-primary: 217 91% 60%;
+  /* Sidebar: الأزرق الداكن (#0F2747) */
+  --sidebar: 214 65% 17%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 214 45% 24%;
+  --sidebar-primary: 38 51% 48%; /* الذهبي (#B88A3B) */
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 222 30% 22%;
-  --sidebar-accent-foreground: 210 25% 90%;
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-accent: 214 55% 24%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 38 51% 48%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222 30% 12%;
-  --popover-border: 220 20% 88%;
+  --popover-foreground: 0 0% 29%;
+  --popover-border: 0 0% 88%;
 
-  --primary: 217 91% 55%;
+  /* Primary: الأزرق الداكن (#0F2747) */
+  --primary: 214 65% 17%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 18% 93%;
-  --secondary-foreground: 222 25% 20%;
+  /* Secondary & Muted: الرمادي الفاتح (#F5F5F5) */
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 29%;
 
-  --muted: 220 20% 95%;
-  --muted-foreground: 220 15% 45%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 42%;
 
-  --accent: 38 95% 55%;
-  --accent-foreground: 30 30% 12%;
+  /* Accent: الذهبي (#B88A3B) */
+  --accent: 38 51% 48%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 75% 52%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 220 20% 85%;
-  --ring: 217 91% 55%;
+  --input: 0 0% 88%;
+  --ring: 214 65% 17%;
   
-  --chart-1: 217 91% 55%;
-  --chart-2: 38 95% 55%;
-  --chart-3: 160 75% 40%;
-  --chart-4: 280 65% 55%;
+  --chart-1: 214 65% 17%;
+  --chart-2: 38 51% 48%;
+  --chart-3: 160 75% 35%;
+  --chart-4: 280 50% 45%;
   --chart-5: 0 75% 52%;
 
   --app-font-sans: 'Cairo', system-ui, sans-serif;
@@ -123,24 +129,24 @@
   --app-font-mono: 'IBM Plex Mono', 'Courier New', monospace;
   --radius: 0.5rem;
   
-  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
-  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+  --shadow-2xs: 0px 1px 2px 0px rgba(15, 39, 71, 0.05);
+  --shadow-xs: 0px 1px 3px 0px rgba(15, 39, 71, 0.08);
   --shadow-sm:
-    0px 2px 4px -1px rgba(0, 0, 0, 0.06),
-    0px 1px 2px -1px rgba(0, 0, 0, 0.1);
+    0px 2px 4px -1px rgba(15, 39, 71, 0.06),
+    0px 1px 2px -1px rgba(15, 39, 71, 0.1);
   --shadow:
-    0px 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0px 2px 4px -1px rgba(0, 0, 0, 0.06);
+    0px 4px 6px -1px rgba(15, 39, 71, 0.08),
+    0px 2px 4px -1px rgba(15, 39, 71, 0.05);
   --shadow-md:
-    0px 6px 12px -2px rgba(0, 0, 0, 0.12),
-    0px 3px 6px -2px rgba(0, 0, 0, 0.08);
+    0px 6px 12px -2px rgba(15, 39, 71, 0.1),
+    0px 3px 6px -2px rgba(15, 39, 71, 0.06);
   --shadow-lg:
-    0px 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0px 4px 6px -2px rgba(0, 0, 0, 0.05);
+    0px 10px 15px -3px rgba(15, 39, 71, 0.08),
+    0px 4px 6px -2px rgba(15, 39, 71, 0.04);
   --shadow-xl:
-    0px 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0px 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+    0px 20px 25px -5px rgba(15, 39, 71, 0.08),
+    0px 10px 10px -5px rgba(15, 39, 71, 0.03);
+  --shadow-2xl: 0px 25px 50px -12px rgba(15, 39, 71, 0.2);
   
   --tracking-normal: 0em;
   --spacing: 0.25rem;
@@ -197,48 +203,48 @@
   --elevate-1: rgba(255, 255, 255, 0.04);
   --elevate-2: rgba(255, 255, 255, 0.09);
 
-  --background: 222 28% 9%;
-  --foreground: 210 20% 92%;
+  --background: 214 50% 8%;
+  --foreground: 0 0% 92%;
 
-  --border: 222 22% 18%;
+  --border: 214 30% 16%;
 
-  --card: 222 26% 12%;
-  --card-foreground: 210 20% 92%;
-  --card-border: 222 22% 20%;
+  --card: 214 45% 11%;
+  --card-foreground: 0 0% 92%;
+  --card-border: 214 30% 18%;
 
-  --sidebar: 222 35% 8%;
-  --sidebar-foreground: 210 20% 85%;
-  --sidebar-border: 222 28% 14%;
-  --sidebar-primary: 217 91% 62%;
+  --sidebar: 214 60% 7%;
+  --sidebar-foreground: 0 0% 88%;
+  --sidebar-border: 214 40% 14%;
+  --sidebar-primary: 38 51% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 222 28% 16%;
-  --sidebar-accent-foreground: 210 20% 88%;
-  --sidebar-ring: 217 91% 62%;
+  --sidebar-accent: 214 40% 15%;
+  --sidebar-accent-foreground: 0 0% 92%;
+  --sidebar-ring: 38 51% 52%;
 
-  --popover: 222 26% 12%;
-  --popover-foreground: 210 20% 92%;
-  --popover-border: 222 22% 20%;
+  --popover: 214 45% 11%;
+  --popover-foreground: 0 0% 92%;
+  --popover-border: 214 30% 18%;
 
-  --primary: 217 91% 62%;
+  --primary: 214 65% 25%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 222 22% 18%;
-  --secondary-foreground: 210 20% 85%;
+  --secondary: 214 30% 16%;
+  --secondary-foreground: 0 0% 88%;
 
-  --muted: 222 22% 16%;
-  --muted-foreground: 210 15% 58%;
+  --muted: 214 30% 15%;
+  --muted-foreground: 0 0% 65%;
 
-  --accent: 38 95% 60%;
-  --accent-foreground: 30 25% 8%;
+  --accent: 38 51% 52%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 222 22% 22%;
-  --ring: 217 91% 62%;
+  --input: 214 30% 20%;
+  --ring: 38 51% 52%;
   
-  --chart-1: 217 91% 62%;
-  --chart-2: 38 95% 60%;
+  --chart-1: 214 65% 35%;
+  --chart-2: 38 51% 52%;
   --chart-3: 160 75% 48%;
   --chart-4: 280 65% 62%;
   --chart-5: 0 75% 58%;
@@ -274,26 +280,26 @@
 
   /* Dark mode specific improvements */
   .dark body {
-    background-color: hsl(222, 28%, 9%);
+    background-color: hsl(214, 50%, 8%);
   }
 
   /* Make inputs more visible in dark mode */
   .dark input,
   .dark textarea,
   .dark select {
-    background-color: hsl(222, 22%, 15%);
-    border-color: hsl(222, 22%, 24%);
-    color: hsl(210, 20%, 92%);
+    background-color: hsl(214, 30%, 14%);
+    border-color: hsl(214, 30%, 22%);
+    color: hsl(0, 0%, 92%);
   }
 
   .dark input::placeholder,
   .dark textarea::placeholder {
-    color: hsl(210, 15%, 45%);
+    color: hsl(0, 0%, 55%);
   }
 
   /* Better card borders in dark mode */
   .dark .rounded-xl.border {
-    border-color: hsl(222, 22%, 20%);
+    border-color: hsl(214, 30%, 18%);
   }
 }
 
@@ -340,10 +346,10 @@
     z-index: 0;
   }
 
-  .hover-elevate:not(.no-default-hover-elevate)::after,
-  .active-elevate:not(.no-default-active-elevate)::after,
-  .hover-elevate-2:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:not(.no-default-active-elevate)::after {
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
     content: '';
     pointer-events: none;
     position: absolute;
@@ -383,7 +389,7 @@
 
   /* Gradient text */
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--chart-3)));
+    background: linear-gradient(135deg, #0F2747, #B88A3B);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -396,16 +402,16 @@
   }
 
   .shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    background: linear-gradient(90deg, transparent, rgba(184, 138, 59, 0.1), transparent);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
 
   /* Pulse ring animation */
   @keyframes pulse-ring {
-    0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
-    70% { box-shadow: 0 0 0 10px hsl(var(--primary) / 0); }
-    100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+    0% { box-shadow: 0 0 0 0 rgba(15, 39, 71, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(15, 39, 71, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(15, 39, 71, 0); }
   }
 
   .pulse-ring {

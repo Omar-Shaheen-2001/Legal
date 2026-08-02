@@ -41,8 +41,8 @@ export function Sidebar() {
       className="flex flex-col h-full sidebar-gradient"
       style={{
         background: theme === 'dark'
-          ? 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 55%, #0f172a 100%)'
-          : 'linear-gradient(160deg, #1e3a8a 0%, #2d1b69 55%, #1e1b4b 100%)',
+          ? 'linear-gradient(160deg, #09172A 0%, #0F2747 55%, #071220 100%)'
+          : 'linear-gradient(160deg, #0F2747 0%, #163660 55%, #0A1B33 100%)',
         borderInlineStart: theme === 'dark'
           ? '1px solid rgba(255,255,255,0.06)'
           : '1px solid rgba(255,255,255,0.08)',
@@ -58,8 +58,8 @@ export function Sidebar() {
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{
-              background: 'rgba(255,255,255,0.15)',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+              background: '#B88A3B',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
             }}
           >
             <Scale className="w-4 h-4 text-white" />
@@ -68,7 +68,7 @@ export function Sidebar() {
             <h1 className="text-xs font-bold text-white leading-tight truncate">
               إدارة جلسات المحكمة
             </h1>
-            <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            <p className="text-[10px] mt-0.5" style={{ color: '#B88A3B' }}>
               بوابة السكرتير القانوني
             </p>
           </div>
@@ -79,7 +79,7 @@ export function Sidebar() {
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <p
           className="text-[10px] font-semibold uppercase tracking-widest px-3 py-2"
-          style={{ color: 'rgba(255,255,255,0.35)' }}
+          style={{ color: 'rgba(255,255,255,0.4)' }}
         >
           القائمة الرئيسية
         </p>
@@ -99,24 +99,24 @@ export function Sidebar() {
                 style={
                   isActive
                     ? {
-                        background: 'rgba(255,255,255,0.18)',
+                        background: '#B88A3B',
                         color: '#ffffff',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.2)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 8px rgba(0,0,0,0.25)',
                       }
                     : {
-                        color: 'rgba(255,255,255,0.6)',
+                        color: 'rgba(255,255,255,0.7)',
                       }
                 }
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.08)';
-                    (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.9)';
+                    (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.1)';
+                    (e.currentTarget as HTMLDivElement).style.color = '#ffffff';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) {
                     (e.currentTarget as HTMLDivElement).style.background = '';
-                    (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.6)';
+                    (e.currentTarget as HTMLDivElement).style.color = 'rgba(255,255,255,0.7)';
                   }
                 }}
               >
@@ -125,7 +125,7 @@ export function Sidebar() {
                 {isActive && (
                   <div
                     className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: 'rgba(255,255,255,0.7)' }}
+                    style={{ background: '#ffffff' }}
                   />
                 )}
               </div>
@@ -142,14 +142,14 @@ export function Sidebar() {
         <button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-          style={{ color: 'rgba(255,255,255,0.55)' }}
+          style={{ color: 'rgba(255,255,255,0.65)' }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.85)';
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
+            (e.currentTarget as HTMLButtonElement).style.color = '#ffffff';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = '';
-            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.55)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.65)';
           }}
           data-testid="button-toggle-theme"
         >
@@ -170,14 +170,14 @@ export function Sidebar() {
           onClick={handleLogout}
           disabled={logoutMutation.isPending}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-40"
-          style={{ color: 'rgba(255,180,180,0.7)' }}
+          style={{ color: 'rgba(255,180,180,0.8)' }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.15)';
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.18)';
             (e.currentTarget as HTMLButtonElement).style.color = 'rgba(252,165,165,1)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = '';
-            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,180,180,0.7)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,180,180,0.8)';
           }}
           data-testid="button-logout"
         >

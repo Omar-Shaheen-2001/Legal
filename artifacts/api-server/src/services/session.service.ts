@@ -10,6 +10,7 @@ import {
   type SheetRow,
 } from "./googleSheets.service";
 import { computeHearingDateTime, parseHijriDateString, hijriToGregorian } from "../utils/hijri";
+import { env } from "../config/env";
 import { logger } from "../lib/logger";
 
 const COLUMN_INDEX: Record<string, number> = {
@@ -125,14 +126,17 @@ export function computeDaysRemainingStr(
     hearingAt = new Date(Date.UTC(greg.year, greg.month - 1, greg.day));
   }
 
-  const now = new Date();
-  const hearingYear = hearingAt.getUTCFullYear();
-  const hearingMonth = hearingAt.getUTCMonth();
-  const hearingDay = hearingAt.getUTCDate();
+  const offsetHours = env.courtTimezoneOffsetHours;
+  const nowMecca = new Date(Date.now() + offsetHours * 3600 * 1000);
+  const hearingMecca = new Date(hearingAt.getTime() + offsetHours * 3600 * 1000);
 
-  const nowYear = now.getUTCFullYear();
-  const nowMonth = now.getUTCMonth();
-  const nowDay = now.getUTCDate();
+  const hearingYear = hearingMecca.getUTCFullYear();
+  const hearingMonth = hearingMecca.getUTCMonth();
+  const hearingDay = hearingMecca.getUTCDate();
+
+  const nowYear = nowMecca.getUTCFullYear();
+  const nowMonth = nowMecca.getUTCMonth();
+  const nowDay = nowMecca.getUTCDate();
 
   const hearingMidnight = Date.UTC(hearingYear, hearingMonth, hearingDay);
   const nowMidnight = Date.UTC(nowYear, nowMonth, nowDay);
@@ -185,10 +189,13 @@ function deriveEffectiveStatus(session: Session): SessionStatus {
   if (hearingAt.getTime() < now.getTime()) {
     return "Finished";
   }
+  const offsetHours = env.courtTimezoneOffsetHours;
+  const meccaHearing = new Date(hearingAt.getTime() + offsetHours * 3600 * 1000);
+  const meccaNow = new Date(now.getTime() + offsetHours * 3600 * 1000);
   const isSameDay =
-    hearingAt.getUTCFullYear() === now.getUTCFullYear() &&
-    hearingAt.getUTCMonth() === now.getUTCMonth() &&
-    hearingAt.getUTCDate() === now.getUTCDate();
+    meccaHearing.getUTCFullYear() === meccaNow.getUTCFullYear() &&
+    meccaHearing.getUTCMonth() === meccaNow.getUTCMonth() &&
+    meccaHearing.getUTCDate() === meccaNow.getUTCDate();
   return isSameDay ? "Today" : "Upcoming";
 }
 

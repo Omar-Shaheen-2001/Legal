@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { ArrowRight, Save, Trash2, Scale } from 'lucide-react';
+import { ArrowRight, Save, Trash2, Scale, MessageCircle, Send } from 'lucide-react';
 import { TimeRemainingCard } from '@/components/time-remaining';
 import {
   AlertDialog,
@@ -67,6 +67,8 @@ export default function SessionDetailPage() {
   const { data: session, isLoading, error } = useGetSession(sessionId);
 
   const [formData, setFormData] = useState<any>({});
+  const [isSendingWhatsapp, setIsSendingWhatsapp] = useState(false);
+
   const updateMutation = useUpdateSession();
   const deleteMutation = useDeleteSession();
 
@@ -126,6 +128,40 @@ export default function SessionDetailPage() {
     );
   };
 
+  const handleSendWhatsapp = async () => {
+    setIsSendingWhatsapp(true);
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/send-whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        throw new Error(`تعذر التواصل مع السيرفر (${res.status}): ${text.slice(0, 100)}`);
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'فشل إرسال تذكير الواتساب');
+      }
+      toast({
+        title: 'تم الإرسال بنجاح 🟢',
+        description: data.message || 'تم إرسال تذكير الواتساب بتفاصيل الجلسة والوقت المتبقي.',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'خطأ في الإرسال',
+        description: err?.message || 'تعذر إرسال تذكير الواتساب.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingWhatsapp(false);
+    }
+  };
+
   if (error) {
     return (
       <div className="p-8">
@@ -171,10 +207,28 @@ export default function SessionDetailPage() {
           <ArrowRight className="w-4 h-4" />
           العودة إلى الجلسات
         </Button>
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${statusStyleMap[session.status]}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
-          {statusLabelMap[session.status]}
-        </span>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleSendWhatsapp}
+            disabled={isSendingWhatsapp}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+            data-testid="button-send-whatsapp-header"
+          >
+            {isSendingWhatsapp ? (
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+            ) : (
+              <MessageCircle className="w-4 h-4" />
+            )}
+            {isSendingWhatsapp ? 'جاري الإرسال...' : 'تذكير واتساب فوراً'}
+          </Button>
+
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${statusStyleMap[session.status]}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+            {statusLabelMap[session.status]}
+          </span>
+        </div>
       </div>
 
       {/* Title */}
@@ -201,9 +255,21 @@ export default function SessionDetailPage() {
 
       {/* Form Card */}
       <div className="fade-in-up fade-in-up-delay-2 rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-        <div className="px-5 py-4 border-b border-border bg-muted/20">
-          <p className="text-sm font-semibold">بيانات الجلسة</p>
-          <p className="text-xs text-muted-foreground mt-0.5">عدّل الحقول ثم اضغط حفظ</p>
+        <div className="px-5 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold">بيانات الجلسة</p>
+            <p className="text-xs text-muted-foreground mt-0.5">عدّل الحقول ثم اضغط حفظ</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSendWhatsapp}
+            disabled={isSendingWhatsapp}
+            className="gap-2 border-emerald-600/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+          >
+            <Send className="w-3.5 h-3.5" />
+            إرسال إشعار بالواتساب
+          </Button>
         </div>
 
         <div className="p-5 space-y-5">
@@ -260,15 +326,30 @@ export default function SessionDetailPage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="fade-in-up fade-in-up-delay-3 flex gap-3">
+      <div className="fade-in-up fade-in-up-delay-3 flex flex-wrap gap-3">
         <Button
           onClick={handleSave}
           disabled={updateMutation.isPending}
-          className="flex-1 gap-2 shadow-sm"
+          className="flex-1 min-w-40 gap-2 shadow-sm"
           data-testid="button-save"
         >
           <Save className="w-4 h-4" />
           {updateMutation.isPending ? 'جارٍ الحفظ...' : 'حفظ التعديلات'}
+        </Button>
+
+        <Button
+          type="button"
+          onClick={handleSendWhatsapp}
+          disabled={isSendingWhatsapp}
+          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          data-testid="button-send-whatsapp-bottom"
+        >
+          {isSendingWhatsapp ? (
+            <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+          ) : (
+            <MessageCircle className="w-4 h-4" />
+          )}
+          {isSendingWhatsapp ? 'جاري الإرسال...' : 'تذكير واتساب فوراً'}
         </Button>
 
         <AlertDialog>

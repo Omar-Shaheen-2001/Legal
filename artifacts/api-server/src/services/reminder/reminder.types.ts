@@ -11,7 +11,8 @@ export interface ReminderPayload {
   sessionDateHijri: string | null;
   sessionTime: string | null;
   /** Which threshold triggered this reminder. */
-  kind: "24h" | "6h";
+  kind: "24h" | "6h" | "instant";
+  remainingText?: string | null;
   court?: string | null;
   courtCircuit?: string | null;
   plaintiff?: string | null;

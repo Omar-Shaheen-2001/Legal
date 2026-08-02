@@ -6,7 +6,7 @@ import {
 } from '@workspace/api-client-react';
 import type { SessionReportInput } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Printer, Download, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Printer, Download, CheckCircle2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
@@ -22,42 +22,95 @@ const PRINT_STYLE = `
   }
   .print-hidden { display: none !important; }
 }
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spinner-slow { animation: spin-slow 0.8s linear infinite; }
+
+/* Force crisp, fully opaque, sharp text and background inside the report area */
+#report-print-area {
+  background-color: #ffffff !important;
+  color: #4B4B4B !important;
+  opacity: 1 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#report-print-area input,
+#report-print-area textarea,
+#report-print-area select {
+  background-color: transparent !important;
+  color: #4B4B4B !important;
+  -webkit-text-fill-color: #4B4B4B !important;
+  opacity: 1 !important;
+  filter: none !important;
+  letter-spacing: normal !important;
+}
+
+#report-print-area input::placeholder,
+#report-print-area textarea::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+  opacity: 1 !important;
+}
 `;
 
-// Exact hex colors matching our theme
+// Extended interface allowing full editing freedom for all fields in the report
+export interface EditableReportForm extends SessionReportInput {
+  sessionDay?: string;
+  sessionDate?: string;
+  court?: string;
+  courtCircuit?: string;
+  plaintiff?: string;
+  defendant?: string;
+  caseSubject?: string;
+  caseNumber?: string;
+}
+
+// Exact hex colors matching legal brand identity:
+// Primary: #0F2747 (Navy Blue), Gold: #B88A3B, Body Text: #4B4B4B, Light Bg: #F5F5F5
 const C = {
-  green: '#0c4a34',
-  gold: '#c59b27',
+  green: '#0F2747',
+  greenLight: '#17365D',
+  gold: '#B88A3B',
+  goldDark: '#9B722C',
   white: '#ffffff',
-  slateLabel: '#f8fafc',
-  slateLabelText: '#334155',
-  bodyText: '#1e293b',
-  border: '#c59b27',
-  lightBorder: '#e2e8f0',
-  dimText: '#94a3b8',
+  slateLabelBg: '#F5F5F5',
+  bodyText: '#4B4B4B',
+  border: '#B88A3B',
+  lightBorder: '#E5E5E5',
+  dimText: '#666666',
 };
 
-// Table cell styles
+// Table cell styles with SOLID vivid colors for crisp rendering
 const th: React.CSSProperties = {
-  backgroundColor: C.slateLabel,
-  color: C.slateLabelText,
+  backgroundColor: '#0F2747',
+  color: '#ffffff',
   fontWeight: '700',
   textAlign: 'center',
-  fontSize: '11px',
-  padding: '8px 10px',
-  border: `1px solid ${C.gold}`,
+  fontSize: '11.5px',
+  padding: '10px 12px',
+  border: '1px solid #B88A3B',
   whiteSpace: 'nowrap',
+  letterSpacing: 'normal',
 };
 
 const td: React.CSSProperties = {
-  color: C.bodyText,
+  backgroundColor: '#ffffff',
+  color: '#4B4B4B',
   textAlign: 'center',
-  fontSize: '11px',
-  padding: '8px 10px',
-  border: `1px solid ${C.gold}`,
+  fontSize: '11.5px',
+  fontWeight: '600',
+  padding: '10px 12px',
+  border: '1px solid #B88A3B',
+  letterSpacing: 'normal',
 };
 
-const emptyForm = (): SessionReportInput => ({
+const emptyForm = (): EditableReportForm => ({
   reportNumber: '01',
   lawyerName: '',
   summary: '',
@@ -67,6 +120,14 @@ const emptyForm = (): SessionReportInput => ({
   ourActionRequired: 'لا يوجد.',
   clientActionRequired: 'لا يوجد.',
   reportDate: new Date().toISOString().split('T')[0],
+  sessionDay: '',
+  sessionDate: '',
+  court: '',
+  courtCircuit: '',
+  plaintiff: '',
+  defendant: '',
+  caseSubject: '',
+  caseNumber: '',
 });
 
 export default function SessionReportPage() {
@@ -78,107 +139,12 @@ export default function SessionReportPage() {
   const { data: session, isLoading: sessionLoading } = useGetSession(id);
   const { data: existingReport, isLoading: reportLoading } = useGetSessionReport(id);
 
-  const [form, setForm] = useState<SessionReportInput>(emptyForm());
+  const [form, setForm] = useState<EditableReportForm>(emptyForm());
   const [downloaded, setDownloaded] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  useEffect(() => {
-    const localKey = `session_report_draft_${id}`;
-    const savedLocal = localStorage.getItem(localKey);
-    if (savedLocal) {
-      try { setForm(JSON.parse(savedLocal)); return; } catch (e) {}
-    }
-    if (existingReport) {
-      setForm({
-        reportNumber: existingReport.reportNumber || '01',
-        lawyerName: existingReport.lawyerName || '',
-        summary: existingReport.summary || '',
-        courtDecision: existingReport.courtDecision || '',
-        nextSessionDate: existingReport.nextSessionDate || '',
-        nextSessionTime: existingReport.nextSessionTime || '',
-        ourActionRequired: existingReport.ourActionRequired || 'لا يوجد.',
-        clientActionRequired: existingReport.clientActionRequired || 'لا يوجد.',
-        reportDate: existingReport.reportDate || new Date().toISOString().split('T')[0],
-      });
-    }
-  }, [existingReport, id]);
-
-  const handleChange = (field: keyof SessionReportInput, value: string) => {
-    setDownloaded(false);
-    setForm((prev) => {
-      const updated = { ...prev, [field]: value };
-      localStorage.setItem(`session_report_draft_${id}`, JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleDownloadPdf = async () => {
-    localStorage.setItem(`session_report_draft_${id}`, JSON.stringify(form));
-    setIsDownloadingPdf(true);
-    setIsExportingPdf(true);
-    toast({ title: 'جاري تنزيل التقرير', description: 'يتم الآن تحويل التقرير إلى ملف PDF...' });
-    // Wait for React to re-render with static text nodes
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    try {
-      const element = document.getElementById('report-print-area');
-      if (!element) throw new Error('تعذر العثور على نموذج التقرير');
-      const pdfEngine = typeof html2pdf === 'function' ? html2pdf : (window as any).html2pdf;
-      if (!pdfEngine) throw new Error('مكتبة PDF غير محملة');
-      const opt = {
-        margin: [0, 0, 0, 0],
-        filename: `تقرير_جلسة_${session?.caseNumber || id}.pdf`,
-        image: { type: 'jpeg', quality: 1.0 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          windowWidth: 794,
-          onclone: (clonedDoc: Document) => {
-            const printArea = clonedDoc.getElementById('report-print-area');
-            if (printArea) {
-              printArea.style.width = '794px';
-              printArea.style.maxWidth = '794px';
-              printArea.style.margin = '0';
-              printArea.style.boxSizing = 'border-box';
-              printArea.style.backgroundColor = '#ffffff';
-              printArea.style.borderRadius = '0';
-              printArea.style.boxShadow = 'none';
-              printArea.style.border = 'none';
-            }
-            // Strip oklch so html2canvas does not crash
-            clonedDoc.querySelectorAll('style').forEach((s) => {
-              if (s.innerHTML) {
-                s.innerHTML = s.innerHTML
-                  .replace(/--[a-zA-Z0-9-]+\s*:\s*oklch\([^;]+\);?/gi, '')
-                  .replace(/oklch\([^)]+\)/gi, '#64748b')
-                  .replace(/color-mix\([^)]+\)/gi, '#64748b');
-              }
-            });
-          },
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      };
-      await pdfEngine().set(opt).from(element).save();
-      setDownloaded(true);
-      toast({ title: 'تم التحميل بنجاح', description: 'تم تنزيل ملف التقرير بصيغة PDF.' });
-    } catch (err: any) {
-      console.error('PDF error:', err);
-      toast({ title: 'خطأ في إنشاء PDF', description: err?.message || 'تعذر تنزيل الملف.', variant: 'destructive' });
-    } finally {
-      setIsExportingPdf(false);
-      setIsDownloadingPdf(false);
-    }
-  };
-
-  const handleBrowserPrint = async () => {
-    localStorage.setItem(`session_report_draft_${id}`, JSON.stringify(form));
-    setIsExportingPdf(true);
-    await new Promise((r) => setTimeout(r, 100));
-    window.print();
-    setTimeout(() => setIsExportingPdf(false), 800);
-  };
-
+  // Helper functions for Arabic day & date
   const getGregorianDate = () => {
     if (!session?.hearingAt) return '—';
     return session.hearingAt.split('T')[0];
@@ -203,10 +169,180 @@ export default function SessionReportPage() {
     } catch { return '—'; }
   };
 
+  useEffect(() => {
+    const localKey = `session_report_draft_${id}`;
+    const savedLocal = localStorage.getItem(localKey);
+    if (savedLocal) {
+      try {
+        const parsed = JSON.parse(savedLocal);
+        setForm((prev) => ({ ...prev, ...parsed }));
+        return;
+      } catch (e) {}
+    }
+
+    if (existingReport || session) {
+      setForm({
+        reportNumber: existingReport?.reportNumber || '01',
+        lawyerName: existingReport?.lawyerName || '',
+        summary: existingReport?.summary || '',
+        courtDecision: existingReport?.courtDecision || '',
+        nextSessionDate: existingReport?.nextSessionDate || '',
+        nextSessionTime: existingReport?.nextSessionTime || '',
+        ourActionRequired: existingReport?.ourActionRequired || 'لا يوجد.',
+        clientActionRequired: existingReport?.clientActionRequired || 'لا يوجد.',
+        reportDate: existingReport?.reportDate || new Date().toISOString().split('T')[0],
+        // Pre-fill editable session info from session object
+        sessionDay: getArabicDay(),
+        sessionDate: getGregorianDate(),
+        court: session?.court || '',
+        courtCircuit: session?.courtCircuit || '',
+        plaintiff: session?.plaintiff || '',
+        defendant: session?.defendant || '',
+        caseSubject: session?.caseSubject || '',
+        caseNumber: session?.caseNumber || '',
+      });
+    }
+  }, [existingReport, session, id]);
+
+  const handleChange = (field: keyof EditableReportForm, value: string) => {
+    setForm((prev) => {
+      const updated = { ...prev, [field]: value };
+      const localKey = `session_report_draft_${id}`;
+      localStorage.setItem(localKey, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Render input helper
+  const renderField = (
+    field: keyof EditableReportForm,
+    placeholder: string,
+    styleOverride: React.CSSProperties = {},
+    className = ''
+  ) => {
+    const val = form[field] ?? '';
+    if (isExportingPdf) {
+      return (
+        <span style={{ fontWeight: '600', color: C.bodyText, ...styleOverride }}>
+          {val || placeholder}
+        </span>
+      );
+    }
+    return (
+      <input
+        type="text"
+        value={val}
+        onChange={(e) => handleChange(field, e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontSize: '11.5px',
+          color: C.bodyText,
+          fontWeight: '600',
+          textAlign: 'center',
+          ...styleOverride,
+        }}
+        className={className}
+      />
+    );
+  };
+
+  // Render textarea helper
+  const renderTextarea = (
+    field: keyof EditableReportForm,
+    rows: number,
+    placeholder: string,
+    styleOverride: React.CSSProperties = {}
+  ) => {
+    const val = form[field] ?? '';
+    if (isExportingPdf) {
+      return (
+        <div style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          lineHeight: '1.8',
+          fontSize: '12px',
+          color: C.bodyText,
+          textAlign: 'right',
+          direction: 'rtl',
+          ...styleOverride,
+        }}>
+          {val || placeholder}
+        </div>
+      );
+    }
+    return (
+      <textarea
+        rows={rows}
+        value={val}
+        onChange={(e) => handleChange(field, e.target.value)}
+        placeholder={placeholder}
+        style={styleOverride}
+      />
+    );
+  };
+
+  const handleBrowserPrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+    setIsDownloadingPdf(true);
+    setIsExportingPdf(true);
+
+    try {
+      await new Promise((r) => setTimeout(r, 100));
+
+      const element = printRef.current;
+      const filename = `تقرير_جلسة_${form.caseNumber || id}_${form.reportDate || '1446'}.pdf`;
+
+      const opt = {
+        margin: [0, 0, 0, 0],
+        filename: filename,
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: {
+          scale: 3,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 1000,
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+        },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+
+      setDownloaded(true);
+      toast({
+        title: 'تم تنزيل التقرير بنجاح 📄',
+        description: 'تم حظفظ التقرير بصيغة PDF عالية الجودة وتوافق الهوية البصرية.',
+      });
+      setTimeout(() => setDownloaded(false), 5000);
+    } catch (err: any) {
+      toast({
+        title: 'خطأ أثناء التنزيل',
+        description: err?.message || 'تعذّر تنزيل ملف PDF. يمكنك استعراض خيار الطباعة.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExportingPdf(false);
+      setIsDownloadingPdf(false);
+    }
+  };
+
   if (sessionLoading || reportLoading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-64">
-        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="p-8 space-y-4 max-w-4xl mx-auto">
+        <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
+        <div className="h-[600px] w-full bg-muted animate-pulse rounded-xl" />
       </div>
     );
   }
@@ -221,118 +357,209 @@ export default function SessionReportPage() {
     );
   }
 
-  // Inline-editable field: shows input in edit mode, plain text in export mode
-  const F = ({ field, className, style, placeholder }: {
-    field: keyof SessionReportInput;
-    className?: string;
-    style?: React.CSSProperties;
-    placeholder?: string;
-  }) => {
-    const val = (form[field] as string) ?? '';
-    if (isExportingPdf) {
-      return (
-        <span style={{ display: 'block', whiteSpace: 'pre-wrap', wordBreak: 'break-word', ...style }}>
-          {val || ''}
-        </span>
-      );
-    }
-    return (
-      <input type="text" value={val} onChange={(e) => handleChange(field, e.target.value)}
-        placeholder={placeholder} className={className} style={style} />
-    );
-  };
-
-  const TA = ({ field, rows, className, style, placeholder }: {
-    field: keyof SessionReportInput;
-    rows?: number;
-    className?: string;
-    style?: React.CSSProperties;
-    placeholder?: string;
-  }) => {
-    const val = (form[field] as string) ?? '';
-    if (isExportingPdf) {
-      return (
-        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', minHeight: (rows ?? 2) * 20, ...style }}>
-          {val || ''}
-        </div>
-      );
-    }
-    return (
-      <textarea rows={rows} value={val} onChange={(e) => handleChange(field, e.target.value)}
-        placeholder={placeholder} className={className} style={style} />
-    );
-  };
-
   return (
     <>
       <style>{PRINT_STYLE}</style>
-      <div className="p-6 lg:p-8 space-y-6 max-w-4xl mx-auto">
+      <div className="p-6 lg:p-8 space-y-5 max-w-4xl mx-auto">
 
-        {/* Actions header */}
-        <div className="print-hidden flex items-center justify-between gap-4">
+        {/* ── Actions Toolbar Header ── */}
+        <div
+          className="print-hidden"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            padding: '14px 20px',
+            borderRadius: '16px',
+            backgroundColor: '#ffffff',
+            border: `1px solid rgba(184,138,59,0.3)`,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+          }}
+        >
+          {/* Back button */}
           <Link href="/reports">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-              <ArrowRight className="w-4 h-4" />
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: '1px solid #E5E5E5',
+                backgroundColor: '#F5F5F5',
+                color: C.green,
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              <ArrowRight style={{ width: '15px', height: '15px' }} />
               العودة للتقارير
-            </Button>
+            </button>
           </Link>
-          <div className="flex gap-2">
-            <Button size="sm" className="gap-2 bg-[#0c4a34] hover:bg-[#064e3b] text-white shadow-sm"
-              onClick={handleDownloadPdf} disabled={isDownloadingPdf} data-testid="button-download-pdf">
-              {isDownloadingPdf
-                ? <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                : downloaded
-                  ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  : <Download className="w-4 h-4" />}
-              {isDownloadingPdf ? 'جاري التحميل...' : downloaded ? 'تم التحميل بنجاح' : 'تنزيل التقرير (PDF)'}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleBrowserPrint}>
-              <Printer className="w-4 h-4" />
+
+          {/* Page title badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '30px', height: '30px', borderRadius: '8px',
+              backgroundColor: C.green,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <FileText style={{ width: '15px', height: '15px', color: '#fff' }} />
+            </div>
+            <span style={{ fontSize: '15px', fontWeight: '700', color: C.green }}>
+              تقرير الجلسة
+            </span>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {/* Download PDF */}
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              data-testid="button-download-pdf"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 18px',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: C.green,
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: isDownloadingPdf ? 'not-allowed' : 'pointer',
+                boxShadow: '0 2px 10px rgba(15,39,71,0.3)',
+              }}
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <div style={{
+                    width: '14px', height: '14px', borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    animation: 'spin-slow 0.8s linear infinite',
+                  }} />
+                  جاري التحميل...
+                </>
+              ) : downloaded ? (
+                <>
+                  <CheckCircle2 style={{ width: '15px', height: '15px', color: '#86efac' }} />
+                  تم التحميل ✓
+                </>
+              ) : (
+                <>
+                  <Download style={{ width: '15px', height: '15px' }} />
+                  تنزيل PDF
+                </>
+              )}
+            </button>
+
+            {/* Print */}
+            <button
+              onClick={handleBrowserPrint}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 16px',
+                borderRadius: '10px',
+                border: `1px solid #B88A3B`,
+                backgroundColor: '#FBF7EE',
+                color: '#9B722C',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              <Printer style={{ width: '15px', height: '15px' }} />
               طباعة
-            </Button>
+            </button>
           </div>
         </div>
 
-        {/* Info notice */}
-        <div className="print-hidden p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm">
-          💡 <strong>ملاحظة:</strong> يتم حفظ المسودة تلقائيًا، وعند الضغط على <strong>"تنزيل التقرير (PDF)"</strong> يتم تصدير التقرير مباشرة كملف PDF بنفس التنسيق.
+        {/* ── Info Notice ── */}
+        <div
+          className="print-hidden"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            backgroundColor: '#FBF7EE',
+            border: '1px solid #F5E6C8',
+          }}
+        >
+          <div style={{ fontSize: '13px', color: '#9B722C', lineHeight: '1.5' }}>
+            💡 <strong>ملاحظة:</strong> جميع حقول التقرير قابلة للتعديل بحرية كاملة ومباشرة، ويتم حفظ المسودة تلقائياً.
+          </div>
         </div>
 
         {/* ═══════════════════════════════════════════════════════════
-             PRINTABLE REPORT AREA — all layout uses HTML tables
-             so html2canvas renders it perfectly pixel-by-pixel
+             PRINTABLE REPORT AREA — 100% Solid, Opaque, Crisp White Paper
             ═══════════════════════════════════════════════════════════ */}
         <div
           id="report-print-area"
           ref={printRef}
           style={{
             direction: 'rtl',
-            backgroundColor: C.white,
-            color: C.bodyText,
+            backgroundColor: '#ffffff',
+            color: '#4B4B4B',
             fontFamily: 'Arial, "Segoe UI", sans-serif',
-            border: isExportingPdf ? 'none' : '1px solid #e2e8f0',
-            borderRadius: isExportingPdf ? '0' : '12px',
+            border: isExportingPdf ? 'none' : `1px solid #B88A3B`,
+            borderRadius: isExportingPdf ? '0' : '14px',
             overflow: 'hidden',
-            boxShadow: isExportingPdf ? 'none' : '0 10px 40px rgba(0,0,0,0.12)',
+            boxShadow: isExportingPdf ? 'none' : '0 8px 30px rgba(0,0,0,0.08)',
+            opacity: 1,
           }}
         >
 
-          {/* ── Header ── */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: `2px solid ${C.gold}` }}>
+          {/* ── Header Table (Bulletproof Layout for html2canvas) ── */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '3px solid #B88A3B', backgroundColor: '#ffffff' }}>
             <tbody>
               <tr>
-                <td style={{ padding: '24px', verticalAlign: 'middle' }}>
-                  <img src="/logo.png" alt="Mohammed Alay Logo" style={{ height: '120px', objectFit: 'contain' }} />
+                <td style={{ padding: '20px 24px', verticalAlign: 'middle', width: '40%' }}>
+                  <img src="/logo.png" alt="Mohammed Alay Logo" style={{ height: '110px', objectFit: 'contain', display: 'block' }} />
                 </td>
-                <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '24px' }} />
-                <td style={{ verticalAlign: 'middle', textAlign: 'left', padding: '0' }}>
+                <td style={{ padding: '0' }} />
+                <td style={{ verticalAlign: 'top', textAlign: 'left', width: '240px', padding: '0' }}>
                   <div style={{
-                    backgroundColor: C.green, color: C.white,
-                    padding: '20px 32px', borderBottomLeftRadius: '24px',
-                    display: 'inline-block', minWidth: '200px', textAlign: 'center',
+                    backgroundColor: '#0F2747',
+                    color: '#ffffff',
+                    padding: '18px 24px',
+                    borderBottomLeftRadius: '22px',
+                    borderBottomRightRadius: '0px',
+                    textAlign: 'center',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    display: 'block',
                   }}>
-                    <div style={{ fontSize: '18px', fontWeight: '700' }}>تقرير الجلسة</div>
-                    <div style={{ fontSize: '9px', letterSpacing: '3px', color: '#cbd5e1', marginTop: '4px' }}>SESSION REPORT</div>
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: '800',
+                      color: '#ffffff',
+                      lineHeight: '1.4',
+                      direction: 'rtl',
+                      textAlign: 'center',
+                    }}>
+                      تقرير الجلسة
+                    </div>
+                    <div style={{
+                      fontSize: '9px',
+                      letterSpacing: '2px',
+                      marginTop: '4px',
+                      color: '#B88A3B',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      direction: 'ltr',
+                      textAlign: 'center',
+                    }}>
+                      SESSION REPORT
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -340,75 +567,92 @@ export default function SessionReportPage() {
           </table>
 
           {/* ── Body ── */}
-          <div style={{ padding: '32px' }}>
+          <div style={{ padding: '32px', backgroundColor: '#ffffff' }}>
 
-            {/* Report Number */}
+            {/* Report Number Badge */}
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <span style={{
-                fontSize: '13px', fontWeight: '700', color: C.green,
-                backgroundColor: '#f1f5f9', padding: '6px 20px',
-                borderRadius: '999px', border: '1px solid #e2e8f0',
+              <div style={{
+                fontSize: '13px', fontWeight: '700', color: '#0F2747',
+                backgroundColor: '#F5F5F5',
+                padding: '6px 24px',
+                borderRadius: '999px',
+                border: '1px solid #B88A3B',
                 display: 'inline-block',
               }}>
                 تقرير رقم (
                 {isExportingPdf
-                  ? <span style={{ fontWeight: '700', color: C.green }}>{form.reportNumber ?? '01'}</span>
+                  ? <span style={{ fontWeight: '700', color: '#0F2747' }}>{form.reportNumber ?? '01'}</span>
                   : <input type="text" value={form.reportNumber ?? '01'}
                       onChange={(e) => handleChange('reportNumber', e.target.value)}
-                      style={{ width: '32px', background: 'transparent', textAlign: 'center', fontWeight: '700', color: C.green, border: 'none', outline: 'none', borderBottom: `1px solid transparent` }} />}
+                      style={{ width: '32px', background: 'transparent', textAlign: 'center', fontWeight: '700', color: '#0F2747', border: 'none', outline: 'none' }} />}
                 )
-              </span>
+              </div>
             </div>
 
-            {/* ── Main Info Table ── */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+            {/* ── Main Info Table (FULLY EDITABLE FIELDS) ── */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', backgroundColor: '#ffffff' }}>
               <tbody>
                 <tr>
                   <td style={th}>اليوم</td>
-                  <td style={td}>{getArabicDay()}</td>
+                  <td style={td}>
+                    {renderField('sessionDay', 'اليوم...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                   <td style={th}>التاريخ</td>
-                  <td style={{ ...td, fontFamily: 'monospace' }}>{getGregorianDate()}</td>
+                  <td style={{ ...td, fontFamily: 'monospace' }}>
+                    {renderField('sessionDate', 'YYYY-MM-DD', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', fontFamily: 'monospace', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                 </tr>
                 <tr>
                   <td style={th}>المحكمة</td>
-                  <td style={td}>{session.court || '—'}</td>
+                  <td style={td}>
+                    {renderField('court', 'المحكمة...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                   <td style={th}>الدائرة</td>
-                  <td style={td}>{session.courtCircuit || '—'}</td>
+                  <td style={td}>
+                    {renderField('courtCircuit', 'الدائرة...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                 </tr>
                 <tr>
                   <td style={th}>المدعي</td>
-                  <td style={td}>{session.plaintiff || '—'}</td>
+                  <td style={td}>
+                    {renderField('plaintiff', 'اسم المدعي...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                   <td style={th}>المدعى عليه</td>
-                  <td style={td}>{session.defendant || '—'}</td>
+                  <td style={td}>
+                    {renderField('defendant', 'اسم المدعى عليه...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                 </tr>
                 <tr>
                   <td style={th}>موضوع القضية</td>
-                  <td style={td}>{session.caseSubject || '—'}</td>
+                  <td style={td}>
+                    {renderField('caseSubject', 'موضوع القضية...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                   <td style={th}>رقم القضية</td>
-                  <td style={{ ...td, fontFamily: 'monospace' }}>{session.caseNumber || '—'}</td>
+                  <td style={{ ...td, fontFamily: 'monospace' }}>
+                    {renderField('caseNumber', 'رقم القضية...', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11.5px', fontFamily: 'monospace', color: '#4B4B4B', fontWeight: '600' })}
+                  </td>
                 </tr>
               </tbody>
             </table>
 
             {/* ── Lawyer Assignment ── */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', backgroundColor: '#ffffff' }}>
               <tbody>
                 <tr>
-                  <td style={{ ...th, width: '180px', borderRadius: '8px 0 0 8px' }}>
+                  <td style={{
+                    ...th, width: '200px',
+                    backgroundColor: '#0F2747',
+                    color: '#ffffff',
+                    borderColor: '#B88A3B',
+                  }}>
                     المحامي المسند إليه الجلسة
                   </td>
                   <td style={{
-                    padding: '8px 12px',
-                    border: `1px solid ${C.lightBorder}`,
-                    backgroundColor: C.white,
-                    borderRadius: '0 8px 8px 0',
+                    padding: '9px 12px',
+                    border: '1px solid #B88A3B',
+                    backgroundColor: '#ffffff',
                   }}>
-                    <F
-                      field="lawyerName"
-                      placeholder="ادخل اسم المحامي هنا..."
-                      style={{ width: '100%', fontSize: '13px', color: C.bodyText, border: 'none', outline: 'none', background: 'transparent' }}
-                      className="focus:outline-none"
-                    />
+                    {renderField('lawyerName', 'ادخل اسم المحامي هنا...', { width: '100%', fontSize: '12.5px', color: '#4B4B4B', border: 'none', outline: 'none', background: 'transparent', fontWeight: '600' }, 'focus:outline-none')}
                   </td>
                 </tr>
               </tbody>
@@ -416,39 +660,41 @@ export default function SessionReportPage() {
 
             {/* ── Summary Box ── */}
             <div style={{
-              border: `1px solid ${C.gold}`,
+              border: '1.5px solid #B88A3B',
               borderRadius: '8px',
               overflow: 'hidden',
               marginBottom: '20px',
+              backgroundColor: '#ffffff',
             }}>
               <div style={{
-                backgroundColor: C.green, color: C.white,
-                textAlign: 'center', fontWeight: '700',
-                fontSize: '13px', padding: '8px',
+                backgroundColor: '#0F2747',
+                color: '#ffffff',
+                textAlign: 'center',
+                fontWeight: '700',
+                fontSize: '13px',
+                padding: '8px 12px',
               }}>
                 الملخص
               </div>
-              <div style={{ padding: '16px' }}>
-                <TA
-                  field="summary"
-                  rows={8}
-                  placeholder="اكتب هنا ملخص ما دار في الجلسة بالتفصيل..."
-                  style={{
-                    width: '100%', fontSize: '13px', lineHeight: '1.8',
-                    color: C.bodyText, minHeight: '180px',
-                    border: isExportingPdf ? 'none' : `1px solid ${C.lightBorder}`,
-                    borderRadius: '6px', padding: '12px', outline: 'none',
-                    resize: 'vertical' as const, background: 'transparent',
-                    boxSizing: 'border-box' as const,
-                  }}
-                />
-                <div style={{ textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#475569', paddingLeft: '16px', marginTop: '8px' }}>
+              <div style={{ padding: '16px', backgroundColor: '#ffffff' }}>
+                {renderTextarea('summary', 8, 'اكتب هنا ملخص ما دار في الجلسة بالتفصيل...', {
+                  width: '100%', fontSize: '12.5px', lineHeight: '1.8',
+                  color: '#4B4B4B', minHeight: '180px',
+                  border: isExportingPdf ? 'none' : '1px solid #E5E5E5',
+                  borderRadius: '6px', padding: '10px', outline: 'none',
+                  resize: 'vertical', background: 'transparent',
+                  boxSizing: 'border-box',
+                })}
+                <div style={{
+                  textAlign: 'left', fontSize: '11.5px', fontWeight: '700',
+                  color: '#0F2747', paddingLeft: '12px', marginTop: '10px',
+                  paddingTop: '8px', borderTop: '1px solid #E5E5E5',
+                }}>
                   تفضلوا بقبول وافر الاحترام والتقدير،،،
                 </div>
                 <div style={{
-                  textAlign: 'center', fontSize: '9px', color: C.dimText,
-                  borderTop: `1px solid ${C.lightBorder}`, paddingTop: '12px',
-                  marginTop: '12px', maxWidth: '480px', margin: '12px auto 0',
+                  textAlign: 'center', fontSize: '9.5px', color: '#666666',
+                  paddingTop: '8px', marginTop: '8px',
                   lineHeight: '1.6',
                 }}>
                   عدم تقديمكم لأي اعتراض على هذه الإفادة إلى مكتب محمد العي للمحاماة خلال ثلاث أيام من وصولها لكم يعد موافقة منكم على مضمونها
@@ -457,92 +703,112 @@ export default function SessionReportPage() {
             </div>
 
             {/* ── Next Session & Actions Table ── */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', backgroundColor: '#ffffff' }}>
               <tbody>
                 {/* Next session row */}
                 <tr>
-                  <td style={{ ...th, width: '22%' }} rowSpan={1}>موعد الجلسة القادمة</td>
+                  <td style={{
+                    ...th, width: '22%',
+                    backgroundColor: '#0F2747',
+                    color: '#ffffff',
+                    borderColor: '#B88A3B',
+                  }} rowSpan={1}>موعد الجلسة القادمة</td>
                   <td style={th}>التاريخ</td>
                   <td style={td}>
-                    <F
-                      field="nextSessionDate"
-                      placeholder="YYYY-MM-DD"
-                      style={{ width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11px', fontFamily: 'monospace', color: C.bodyText }}
-                    />
+                    {renderField('nextSessionDate', 'YYYY-MM-DD', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11px', fontFamily: 'monospace', color: '#4B4B4B', fontWeight: '600' })}
                   </td>
                   <td style={th}>اليوم</td>
                   <td style={td}>
-                    <span style={{ fontSize: '11px', color: C.bodyText }}>
+                    <span style={{ fontSize: '11px', color: '#4B4B4B', fontWeight: '600' }}>
                       {getNextSessionDay()}
                     </span>
                   </td>
                   <td style={th}>الساعة</td>
                   <td style={td}>
-                    <F
-                      field="nextSessionTime"
-                      placeholder="00:00"
-                      style={{ width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11px', color: C.bodyText }}
-                    />
+                    {renderField('nextSessionTime', '00:00', { width: '100%', textAlign: 'center', background: 'transparent', border: 'none', outline: 'none', fontSize: '11px', color: '#4B4B4B', fontWeight: '600' })}
                   </td>
                 </tr>
                 {/* Our action row */}
                 <tr>
-                  <td style={{ ...th, width: '22%' }}>الإجراء المطلوب من قبلنا</td>
+                  <td style={{
+                    ...th, width: '22%',
+                    backgroundColor: '#0F2747',
+                    color: '#ffffff',
+                    borderColor: '#B88A3B',
+                  }}>الإجراء المطلوب من قبلنا</td>
                   <td colSpan={6} style={{ ...td, textAlign: 'right', padding: '6px 10px' }}>
-                    <TA
-                      field="ourActionRequired"
-                      rows={2}
-                      placeholder="ادخل الإجراءات المطلوبة من فريق المحاماة..."
-                      style={{
-                        width: '100%', fontSize: '12px', color: C.bodyText, background: 'transparent',
-                        border: isExportingPdf ? 'none' : `1px solid ${C.lightBorder}`,
-                        borderRadius: '4px', padding: '4px 8px', outline: 'none', resize: 'none' as const,
-                        boxSizing: 'border-box' as const, direction: 'rtl', textAlign: 'right',
-                      }}
-                    />
+                    {renderTextarea('ourActionRequired', 2, 'ادخل الإجراءات المطلوبة من فريق المحاماة...', {
+                      width: '100%', fontSize: '12px', color: '#4B4B4B', background: 'transparent',
+                      border: isExportingPdf ? 'none' : '1px solid #E5E5E5',
+                      borderRadius: '4px', padding: '4px 8px', outline: 'none', resize: 'none',
+                      boxSizing: 'border-box', direction: 'rtl', textAlign: 'right',
+                    })}
                   </td>
                 </tr>
                 {/* Client action row */}
                 <tr>
-                  <td style={{ ...th, width: '22%' }}>الإجراء المطلوب من قبلكم</td>
+                  <td style={{
+                    ...th, width: '22%',
+                    backgroundColor: '#0F2747',
+                    color: '#ffffff',
+                    borderColor: '#B88A3B',
+                  }}>الإجراء المطلوب من قبلكم</td>
                   <td colSpan={6} style={{ ...td, textAlign: 'right', padding: '6px 10px' }}>
-                    <TA
-                      field="clientActionRequired"
-                      rows={2}
-                      placeholder="ادخل الإجراءات أو المستندات المطلوبة من العميل..."
-                      style={{
-                        width: '100%', fontSize: '12px', color: C.bodyText, background: 'transparent',
-                        border: isExportingPdf ? 'none' : `1px solid ${C.lightBorder}`,
-                        borderRadius: '4px', padding: '4px 8px', outline: 'none', resize: 'none' as const,
-                        boxSizing: 'border-box' as const, direction: 'rtl', textAlign: 'right',
-                      }}
-                    />
+                    {renderTextarea('clientActionRequired', 2, 'ادخل الإجراءات أو المستندات المطلوبة من العميل...', {
+                      width: '100%', fontSize: '12px', color: '#4B4B4B', background: 'transparent',
+                      border: isExportingPdf ? 'none' : '1px solid #E5E5E5',
+                      borderRadius: '4px', padding: '4px 8px', outline: 'none', resize: 'none',
+                      boxSizing: 'border-box', direction: 'rtl', textAlign: 'right',
+                    })}
                   </td>
                 </tr>
               </tbody>
             </table>
 
-
           </div>
 
           {/* ── Footer Banner ── */}
-          <div style={{ marginTop: '32px' }}>
-            <div style={{ height: '4px', backgroundColor: C.gold, width: '100%' }} />
-            <table style={{ width: '100%', backgroundColor: C.green, borderCollapse: 'collapse' }}>
+          <div>
+            <div style={{
+              height: '4px',
+              backgroundColor: '#B88A3B',
+              width: '100%',
+            }} />
+            <table style={{
+              width: '100%',
+              backgroundColor: '#0F2747',
+              borderCollapse: 'collapse',
+            }}>
               <tbody>
                 <tr>
-                  <td style={{ padding: '16px 20px', verticalAlign: 'middle', borderLeft: '1px solid rgba(255,255,255,0.2)', width: '30%' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '700', color: C.white }}>شريكك القانوني المعتمد</div>
-                    <div style={{ fontSize: '9px', color: '#cbd5e1', letterSpacing: '1px', marginTop: '2px' }}>Your Trusted Legal Partner</div>
+                  <td style={{
+                    padding: '16px 20px', verticalAlign: 'middle',
+                    borderLeft: '1px solid rgba(255,255,255,0.2)',
+                    width: '30%',
+                  }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#ffffff' }}>
+                      شريكك القانوني المعتمد
+                    </div>
+                    <div style={{
+                      fontSize: '9px', color: '#B88A3B', letterSpacing: '1px',
+                      marginTop: '3px', textTransform: 'uppercase', fontWeight: '700',
+                    }}>Your Trusted Legal Partner</div>
                   </td>
                   <td style={{ padding: '16px', textAlign: 'center', verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', color: C.white, fontSize: '11px', flexWrap: 'wrap' }}>
+                    <div style={{
+                      display: 'flex', gap: '16px', justifyContent: 'center',
+                      color: '#ffffff', fontSize: '11px', flexWrap: 'wrap', fontWeight: '600',
+                    }}>
                       <span>🌐 mohdalay.com</span>
                       <span>📞 053 678 7773</span>
                       <span>✉️ office@mahdalay.com</span>
                     </div>
                   </td>
-                  <td style={{ padding: '16px 20px', textAlign: 'right', verticalAlign: 'middle', fontSize: '10px', color: '#cbd5e1', lineHeight: '1.6', width: '25%' }}>
+                  <td style={{
+                    padding: '16px 20px', textAlign: 'right', verticalAlign: 'middle',
+                    fontSize: '10px', color: '#E5E5E5', lineHeight: '1.6',
+                    width: '25%',
+                  }}>
                     جدة، طريق الملك فهد 7746<br />
                     Jeddah, King Fahad Rd 7746
                   </td>

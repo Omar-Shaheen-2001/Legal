@@ -14,10 +14,13 @@ import {
   getSessionById,
   listSessions,
   updateSession,
+  computeDaysRemainingStr,
 } from "../services/session.service";
 import { isGoogleSheetsConfigured } from "../config/env";
 import { logger } from "../lib/logger";
 import { attachAuthUser, requireAuth } from "../middlewares/auth.middleware";
+import { WhatsappReminderChannel } from "../services/reminder/channels/whatsappChannel";
+import { computeHearingDateTime } from "../utils/hijri";
 
 const router: IRouter = Router();
 
@@ -141,6 +144,71 @@ router.delete("/sessions/:id", attachAuthUser, requireAuth, async (req, res) => 
   } catch (err) {
     logger.error({ err }, "Failed to delete session");
     res.status(500).json({ error: "Failed to delete session." });
+  }
+});
+
+/**
+ * POST /api/sessions/:id/send-whatsapp
+ * Dispatches an instant WhatsApp reminder with session details and calculated remaining time.
+ */
+router.post("/sessions/:id/send-whatsapp", attachAuthUser, requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid session id." });
+    return;
+  }
+  try {
+    const session = await getSessionById(id);
+    if (!session) {
+      res.status(404).json({ error: "الجلسة غير موجودة." });
+      return;
+    }
+
+    const hearingAt = computeHearingDateTime(session.sessionDateHijri, session.sessionTime);
+    let remainingText = "تذكير فوري";
+
+    if (hearingAt) {
+      const diffMs = hearingAt.getTime() - Date.now();
+      if (diffMs > 0) {
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours >= 24) {
+          const days = Math.floor(hours / 24);
+          const remHours = hours % 24;
+          remainingText = `متبقي ${days} يوم و ${remHours} ساعة`;
+        } else if (hours > 0) {
+          remainingText = `متبقي ${hours} ساعة و ${minutes} دقيقة`;
+        } else {
+          remainingText = `متبقي ${minutes} دقيقة`;
+        }
+      } else {
+        remainingText = "موعد الجلسة الآن أو انتهى";
+      }
+    } else {
+      const daysStr = computeDaysRemainingStr(session.sessionDateHijri, session.sessionTime);
+      remainingText = `متبقي ${daysStr}`;
+    }
+
+    const channel = new WhatsappReminderChannel();
+    await channel.send({
+      sessionId: session.id,
+      caseNumber: session.caseNumber,
+      sessionDateHijri: session.sessionDateHijri,
+      sessionTime: session.sessionTime,
+      kind: "instant",
+      remainingText,
+      court: session.court,
+      courtCircuit: session.courtCircuit,
+      plaintiff: session.plaintiff,
+      defendant: session.defendant,
+      caseSubject: session.caseSubject,
+    });
+
+    res.json({ message: "تم إرسال تذكير الواتساب بنجاح!" });
+  } catch (err: any) {
+    logger.error({ err, id }, "Failed to send instant WhatsApp reminder");
+    const errMsg = err?.message || "فشل إرسال تذكير الواتساب.";
+    res.status(400).json({ error: errMsg });
   }
 });
 

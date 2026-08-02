@@ -128,10 +128,14 @@ export const env = {
   get reminderCronExpression(): string {
     return readEnv("REMINDER_CRON_EXPRESSION") ?? "*/10 * * * *";
   },
-  /** Fixed UTC offset (hours) used to interpret Hijri session dates/times. Saudi courts operate in Asia/Riyadh (UTC+3) with no DST. */
+  /**
+   * Fixed UTC offset (hours) used to interpret Hijri session dates/times.
+   * Uses Mecca time (Asia/Makkah = UTC+3), identical to Asia/Riyadh.
+   * Saudi Arabia has no daylight-saving time, so the offset is always +3.
+   */
   get courtTimezoneOffsetHours(): number {
     const raw = readEnv("COURT_TIMEZONE_OFFSET_HOURS");
-    const parsed = raw ? Number(raw) : 3;
+    const parsed = raw ? Number(raw) : 3; // Mecca / Riyadh = UTC+3
     return Number.isFinite(parsed) ? parsed : 3;
   },
 

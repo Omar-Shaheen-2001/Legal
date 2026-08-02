@@ -27,10 +27,10 @@ export function dateToHijri(date: Date): HijriDate {
   };
 }
 
-/** Current Hijri date in Riyadh time (UTC+3). */
+/** Current Hijri date in Mecca time (Asia/Makkah = UTC+3). */
 export function nowHijri(): HijriDate {
-  const riyadhNow = new Date(Date.now() + 3 * 3600 * 1000);
-  return dateToHijri(riyadhNow);
+  const meccaNow = new Date(Date.now() + 3 * 3600 * 1000);
+  return dateToHijri(meccaNow);
 }
 
 /** Format a HijriDate as "DD/MM/YYYY هـ". */
@@ -75,8 +75,8 @@ export function computeTimeRemaining(hearingAt: string | null | undefined): Time
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  // isToday: same Hijri day as current Riyadh date
-  const targetHijri = dateToHijri(new Date(target + 3 * 3600 * 1000)); // UTC+3 shift for display
+  // isToday: same Hijri day as current Mecca date (UTC+3)
+  const targetHijri = dateToHijri(new Date(target + 3 * 3600 * 1000)); // UTC+3 shift for Mecca time
   const currentHijri = nowHijri();
   const isToday =
     targetHijri.year === currentHijri.year &&
