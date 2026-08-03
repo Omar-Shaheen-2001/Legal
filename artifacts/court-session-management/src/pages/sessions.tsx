@@ -258,7 +258,7 @@ export default function SessionsPage() {
             </div>
           ))}
         </div>
-      ) : sessions && sessions.length > 0 ? (
+      ) : Array.isArray(sessions) && sessions.length > 0 ? (
         <div className="space-y-3 fade-in-up fade-in-up-delay-2">
           {sessions.map((session, i) => {
             const effectiveStatus = deriveEffectiveStatus(session.status, session.hearingAt);
