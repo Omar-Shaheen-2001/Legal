@@ -136,9 +136,39 @@ export async function listRows(): Promise<{ id: number; values: SheetRow }[]> {
     .filter((row) => row.values.some((cell) => cell !== undefined && cell !== ""));
 }
 
-/** Appends a new row and returns its 1-based sheet row id. */
+/** Appends a new row (filling the first empty row if available) and returns its 1-based sheet row id. */
 export async function appendRow(values: SheetRow): Promise<number> {
   const sheets = getClient();
+
+  // Check if there are any existing empty rows in the sheet range to reuse
+  try {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId: env.googleSpreadsheetId,
+      range: `${env.googleSheetName}!A2:Q`,
+    });
+    const rawRows = existing.data.values ?? [];
+
+    let emptyRowId: number | null = null;
+    for (let i = 0; i < rawRows.length; i++) {
+      const r = rawRows[i];
+      const isEmpty =
+        !r ||
+        r.length === 0 ||
+        r.every((cell) => cell === undefined || cell === null || String(cell).trim() === "");
+      if (isEmpty) {
+        emptyRowId = i + 2; // 1-based sheet row number (Header is row 1)
+        break;
+      }
+    }
+
+    if (emptyRowId !== null) {
+      await updateRow(emptyRowId, values);
+      return emptyRowId;
+    }
+  } catch (err) {
+    logger.warn({ err }, "Failed to check empty rows before append, falling back to append API");
+  }
+
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: env.googleSpreadsheetId,
     range: `${env.googleSheetName}!A:Q`,

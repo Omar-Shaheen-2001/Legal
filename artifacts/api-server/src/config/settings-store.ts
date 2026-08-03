@@ -58,8 +58,7 @@ function saveToDisk(settings: AppSettings): void {
   try {
     writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), "utf-8");
   } catch (err) {
-    logger.error({ err, path: SETTINGS_PATH }, "Failed to write settings.json");
-    throw new Error("Could not persist settings to disk.");
+    logger.warn({ err, path: SETTINGS_PATH }, "Failed to write settings.json (read-only environment)");
   }
 }
 

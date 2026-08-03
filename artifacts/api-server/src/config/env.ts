@@ -50,10 +50,7 @@ export const env = {
     return readEnv("APP_PASSWORD") ?? "5128";
   },
   get sessionSecret(): string {
-    return requireEnv(
-      "SESSION_SECRET",
-      "Used to sign the login session cookie.",
-    );
+    return readEnv("SESSION_SECRET") ?? "court_session_secret_fallback_key";
   },
 
   // --- Google Sheets (acts as the database in v1) ---
