@@ -41,24 +41,36 @@ export interface AppSettings {
 }
 
 const SETTINGS_PATH = resolve(process.cwd(), "settings.json");
+const ALT_SETTINGS_PATH = resolve(process.cwd(), "artifacts", "api-server", "settings.json");
+const TMP_SETTINGS_PATH = resolve("/tmp", "settings.json");
 
 function loadFromDisk(): AppSettings {
-  try {
-    if (existsSync(SETTINGS_PATH)) {
-      const raw = readFileSync(SETTINGS_PATH, "utf-8");
-      return JSON.parse(raw) as AppSettings;
+  const pathsToTry = [TMP_SETTINGS_PATH, SETTINGS_PATH, ALT_SETTINGS_PATH];
+  for (const p of pathsToTry) {
+    try {
+      if (existsSync(p)) {
+        const raw = readFileSync(p, "utf-8");
+        return JSON.parse(raw) as AppSettings;
+      }
+    } catch {
+      // ignore & try next path
     }
-  } catch (err) {
-    logger.warn({ err, path: SETTINGS_PATH }, "Failed to read settings.json — using defaults");
   }
   return {};
 }
 
 function saveToDisk(settings: AppSettings): void {
+  const content = JSON.stringify(settings, null, 2);
   try {
-    writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), "utf-8");
-  } catch (err) {
-    logger.warn({ err, path: SETTINGS_PATH }, "Failed to write settings.json (read-only environment)");
+    writeFileSync(SETTINGS_PATH, content, "utf-8");
+    return;
+  } catch {
+    // Read-only environment (e.g. Vercel) -> write to /tmp
+    try {
+      writeFileSync(TMP_SETTINGS_PATH, content, "utf-8");
+    } catch (err) {
+      logger.warn({ err }, "Failed to write settings.json to /tmp");
+    }
   }
 }
 
