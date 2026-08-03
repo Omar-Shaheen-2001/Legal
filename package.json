@@ -9,6 +9,11 @@
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "core-js"
+    ]
+  },
   "dependencies": {
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
