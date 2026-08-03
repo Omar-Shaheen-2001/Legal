@@ -35,5 +35,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(env.sessionSecret));
 
 app.use("/api", router);
+app.use(router);
 
 export default app;
