@@ -40,17 +40,22 @@ export interface AppSettings {
   whatsappInstanceId?: string;
 }
 
-const SETTINGS_PATH = resolve(process.cwd(), "settings.json");
-const ALT_SETTINGS_PATH = resolve(process.cwd(), "artifacts", "api-server", "settings.json");
+/**
+ * On Vercel, the filesystem is read-only except for /tmp.
+ * Priority order: in-memory _cache > /tmp/settings.json > process.env
+ */
 const TMP_SETTINGS_PATH = resolve("/tmp", "settings.json");
+const LOCAL_SETTINGS_PATH = resolve(process.cwd(), "settings.json");
+const ALT_SETTINGS_PATH = resolve(process.cwd(), "artifacts", "api-server", "settings.json");
 
 function loadFromDisk(): AppSettings {
-  const pathsToTry = [TMP_SETTINGS_PATH, SETTINGS_PATH, ALT_SETTINGS_PATH];
+  const pathsToTry = [TMP_SETTINGS_PATH, LOCAL_SETTINGS_PATH, ALT_SETTINGS_PATH];
   for (const p of pathsToTry) {
     try {
       if (existsSync(p)) {
         const raw = readFileSync(p, "utf-8");
-        return JSON.parse(raw) as AppSettings;
+        const parsed = JSON.parse(raw) as AppSettings;
+        return parsed;
       }
     } catch {
       // ignore & try next path
@@ -61,25 +66,46 @@ function loadFromDisk(): AppSettings {
 
 function saveToDisk(settings: AppSettings): void {
   const content = JSON.stringify(settings, null, 2);
+  // Try /tmp first (always writable on Vercel)
   try {
-    writeFileSync(SETTINGS_PATH, content, "utf-8");
+    writeFileSync(TMP_SETTINGS_PATH, content, "utf-8");
     return;
   } catch {
-    // Read-only environment (e.g. Vercel) -> write to /tmp
-    try {
-      writeFileSync(TMP_SETTINGS_PATH, content, "utf-8");
-    } catch (err) {
-      logger.warn({ err }, "Failed to write settings.json to /tmp");
-    }
+    // /tmp failed, try local path
+  }
+  try {
+    writeFileSync(LOCAL_SETTINGS_PATH, content, "utf-8");
+  } catch (err) {
+    logger.warn({ err }, "Failed to persist settings.json to any path");
   }
 }
 
-// In-memory cache — loaded once at startup, updated on every save.
+// In-memory cache — loaded once at module init, updated on every save.
 let _cache: AppSettings = loadFromDisk();
 
-/** Return the current settings (in-memory cache). */
+/**
+ * Return the current settings.
+ * Priority: in-memory _cache > /tmp disk > process.env
+ */
 export function getSettings(): AppSettings {
-  return { ..._cache };
+  // Re-read disk every time to pick up saves from other requests in the same
+  // Vercel invocation that may have written to /tmp.
+  const disk = loadFromDisk();
+  const merged = { ...disk, ..._cache };
+
+  return {
+    hfApiToken:          merged.hfApiToken          || process.env.HF_API_TOKEN          || process.env.HF_TOKEN             || undefined,
+    hfModel:             merged.hfModel              || process.env.HF_MODEL               || undefined,
+    whatsappNumber:      merged.whatsappNumber       || process.env.WHATSAPP_NUMBER        || undefined,
+    whatsappApiUrl:      merged.whatsappApiUrl       || process.env.WHATSAPP_API_URL       || undefined,
+    whatsappToken:       merged.whatsappToken        || process.env.WHATSAPP_TOKEN         || undefined,
+    whatsappInstanceId:  merged.whatsappInstanceId   || process.env.WHATSAPP_INSTANCE_ID   || undefined,
+    aiApiKey:            merged.aiApiKey             || process.env.AI_API_KEY             || process.env.OPENAI_API_KEY      || undefined,
+    aiBaseUrl:           merged.aiBaseUrl            || process.env.AI_BASE_URL            || undefined,
+    aiModel:             merged.aiModel              || process.env.AI_MODEL               || undefined,
+    googleSpreadsheetId: merged.googleSpreadsheetId  || process.env.GOOGLE_SPREADSHEET_ID  || undefined,
+    googleSheetName:     merged.googleSheetName      || process.env.GOOGLE_SHEET_NAME      || undefined,
+  };
 }
 
 /**
@@ -111,5 +137,5 @@ export function saveSettings(patch: Partial<AppSettings>): AppSettings {
   if (patch.whatsappInstanceId === "") delete _cache.whatsappInstanceId;
 
   saveToDisk(_cache);
-  return { ..._cache };
+  return getSettings();
 }
