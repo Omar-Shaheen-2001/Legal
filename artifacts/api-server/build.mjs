@@ -118,8 +118,42 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
-}
+  // ── Vercel Serverless Function handler ─────────────────────────────────
+  // Produces a self-contained CJS bundle at <root>/api/index.js that Vercel
+  // discovers automatically as the /api/* serverless function.
+  const rootDir = path.resolve(artifactDir, "..", "..");
+  const vercelHandlerSrc = path.resolve(rootDir, "api", "index.ts");
+  const vercelOutDir = path.resolve(rootDir, "api");
 
+  await esbuild({
+    entryPoints: [vercelHandlerSrc],
+    platform: "node",
+    bundle: true,
+    format: "cjs",          // Vercel Node runtime requires CJS
+    outfile: path.resolve(vercelOutDir, "index.js"),
+    logLevel: "info",
+    external: [
+      "*.node",
+      "googleapis",
+      "@google-cloud/*",
+      "@google/*",
+      "firebase-admin",
+    ],
+    sourcemap: false,
+    plugins: [],
+    banner: {
+      js: `
+"use strict";
+const { createRequire: __bannerCrReq } = require('node:module');
+const __bannerPath = require('node:path');
+const __bannerUrl = require('node:url');
+globalThis.require = __bannerCrReq(__filename);
+globalThis.__dirname = __bannerPath.dirname(__filename);
+      `,
+    },
+  });
+  console.log("[build] Vercel handler written to api/index.js");
+}
 buildAll().catch((err) => {
   console.error(err);
   process.exit(1);

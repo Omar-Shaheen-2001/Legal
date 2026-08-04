@@ -1,16 +1,22 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import app from "../artifacts/api-server/src/app";
 
 /**
- * Vercel Serverless handler for all /api/* routes.
+ * Vercel Serverless Function handler for ALL /api/* routes.
  *
- * Vercel preserves the original req.url through rewrites, so we do NOT
- * need to manipulate it. We only need to:
- *  - Mark the request as HTTPS (Vercel always terminates TLS at the edge)
- *    so that Express treats req.secure = true and secure cookies work.
+ * This file is compiled by esbuild (during `pnpm run build`) into
+ * api/index.js — a self-contained CJS bundle that Vercel discovers and
+ * invokes as a serverless function.
+ *
+ * Why CJS? Vercel's Node.js runtime requires CommonJS for function bundles
+ * unless the package.json in the function directory sets "type":"module".
+ *
+ * Why bundle? api/index.ts imports deep TypeScript source that Vercel cannot
+ * compile on its own, so we pre-bundle everything with esbuild.
  */
-export default function handler(req: any, res: any) {
-  // Vercel always serves over HTTPS – let Express know so signed
-  // secure cookies are read correctly.
-  req.headers["x-forwarded-proto"] = "https";
-  return app(req, res);
-}
+module.exports = function handler(req: IncomingMessage, res: ServerResponse) {
+  // Vercel always terminates TLS at the edge; signal this to Express so
+  // that signed secure cookies are accepted correctly.
+  (req as any).headers["x-forwarded-proto"] = "https";
+  return (app as any)(req, res);
+};
