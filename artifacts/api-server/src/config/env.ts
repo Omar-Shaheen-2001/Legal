@@ -61,7 +61,7 @@ export const env = {
     return requireEnv(
       "GOOGLE_SPREADSHEET_ID",
       "Create/open a Google Sheet, copy the ID from its URL, and share it with your service account email.",
-    );
+    ).trim();
   },
   get googleServiceAccountJson(): Record<string, unknown> {
     try {

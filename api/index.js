@@ -39503,7 +39503,7 @@ var env = {
     return requireEnv(
       "GOOGLE_SPREADSHEET_ID",
       "Create/open a Google Sheet, copy the ID from its URL, and share it with your service account email."
-    );
+    ).trim();
   },
   get googleServiceAccountJson() {
     try {
@@ -39715,9 +39715,10 @@ function getClient() {
         "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email/private_key. Paste the full service account key JSON."
       );
     }
+    const privateKey = credentials.private_key.replace(/\\n/g, "\n");
     const auth = new import_googleapis.google.auth.JWT({
       email: credentials.client_email,
-      key: credentials.private_key,
+      key: privateKey,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"]
     });
     sheetsClient = import_googleapis.google.sheets({ version: "v4", auth });

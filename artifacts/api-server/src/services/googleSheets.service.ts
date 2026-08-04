@@ -44,9 +44,10 @@ function getClient(): sheets_v4.Sheets {
         "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email/private_key. Paste the full service account key JSON.",
       );
     }
+    const privateKey = credentials.private_key.replace(/\\n/g, "\n");
     const auth = new google.auth.JWT({
       email: credentials.client_email,
-      key: credentials.private_key,
+      key: privateKey,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
     sheetsClient = google.sheets({ version: "v4", auth });
