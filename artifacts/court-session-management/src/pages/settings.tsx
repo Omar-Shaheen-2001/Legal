@@ -38,7 +38,12 @@ interface SettingsFormState {
 
 async function fetchSettings(): Promise<SettingsData> {
   const res = await fetch('/api/settings', { credentials: 'include' });
-  if (!res.ok) throw new Error('فشل تحميل الإعدادات');
+  if (res.status === 401) {
+    throw new Error('يرجى تسجيل الدخول أولاً لتصفح الإعدادات');
+  }
+  if (!res.ok) {
+    throw new Error(`فشل تحميل الإعدادات (${res.status})`);
+  }
   return res.json() as Promise<SettingsData>;
 }
 
@@ -182,8 +187,9 @@ export default function SettingsPage() {
           whatsappInstanceId: data.whatsappInstanceId,
         });
       })
-      .catch(() => {
-        toast({ title: 'خطأ', description: 'فشل تحميل الإعدادات', variant: 'destructive' });
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'فشل تحميل الإعدادات';
+        toast({ title: 'خطأ', description: msg, variant: 'destructive' });
       })
       .finally(() => setLoading(false));
   }, [toast]);
