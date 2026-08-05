@@ -153,6 +153,14 @@ globalThis.__dirname = __bannerPath.dirname(__filename);
     },
   });
   console.log("[build] Vercel handler written to api/index.js");
+
+  // Also write api/[...path].js for Vercel catch-all serverless function routing
+  const fsPromises = require("node:fs/promises");
+  await fsPromises.copyFile(
+    path.resolve(vercelOutDir, "index.js"),
+    path.resolve(vercelOutDir, "[...path].js"),
+  );
+  console.log("[build] Vercel catch-all handler written to api/[...path].js");
 }
 buildAll().catch((err) => {
   console.error(err);
