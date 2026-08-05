@@ -42,7 +42,7 @@ function formatRemainingTime(diffMs: number): string {
   return `متبقي ${parts.join(" و ")}`;
 }
 
-async function runReminderSweep(): Promise<void> {
+export async function runReminderSweep(): Promise<void> {
   const sessions = await listSessions();
   const now = new Date();
 

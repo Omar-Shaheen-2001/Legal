@@ -126,6 +126,14 @@ export const env = {
     return readEnv("REMINDER_CRON_EXPRESSION") ?? "*/10 * * * *";
   },
   /**
+   * Secret token used to authenticate Vercel Cron Job requests.
+   * Set CRON_SECRET in your Vercel environment variables.
+   * Vercel automatically sends this as `Authorization: Bearer <CRON_SECRET>`.
+   */
+  get cronSecret(): string | undefined {
+    return readEnv("CRON_SECRET");
+  },
+  /**
    * Fixed UTC offset (hours) used to interpret Hijri session dates/times.
    * Uses Mecca time (Asia/Makkah = UTC+3), identical to Asia/Riyadh.
    * Saudi Arabia has no daylight-saving time, so the offset is always +3.

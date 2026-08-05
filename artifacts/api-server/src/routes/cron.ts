@@ -1,0 +1,54 @@
+import { Router, type IRouter } from "express";
+import { env, isGoogleSheetsConfigured } from "../config/env";
+import { logger } from "../lib/logger";
+import { runReminderSweep } from "../scheduler/reminderScheduler";
+
+const router: IRouter = Router();
+
+/**
+ * GET /api/cron/reminders
+ *
+ * Vercel Cron Job endpoint — invoked on the schedule defined in vercel.json.
+ * Vercel automatically sends `Authorization: Bearer <CRON_SECRET>` with every
+ * cron request, so we validate that token before running the sweep.
+ *
+ * Can also be called manually (e.g. for testing) by passing the same bearer token.
+ */
+router.get("/cron/reminders", async (req, res) => {
+  // --- Authentication ---
+  const secret = env.cronSecret;
+  if (secret) {
+    const authHeader = req.headers["authorization"] ?? "";
+    const provided = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
+    if (provided !== secret) {
+      logger.warn({ ip: req.ip }, "Cron reminder endpoint: unauthorized request rejected");
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+  }
+
+  // --- Guard: sheets not configured yet ---
+  if (!isGoogleSheetsConfigured()) {
+    res
+      .status(503)
+      .json({ ok: false, message: "Google Sheets is not configured yet." });
+    return;
+  }
+
+  // --- Run the sweep ---
+  const startedAt = Date.now();
+  try {
+    await runReminderSweep();
+    const durationMs = Date.now() - startedAt;
+    logger.info({ durationMs }, "Cron reminder sweep completed successfully");
+    res.json({ ok: true, durationMs });
+  } catch (err) {
+    const durationMs = Date.now() - startedAt;
+    logger.error({ err, durationMs }, "Cron reminder sweep failed");
+    res.status(500).json({ ok: false, error: "Reminder sweep failed." });
+  }
+});
+
+export default router;

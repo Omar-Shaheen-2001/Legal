@@ -6,6 +6,7 @@ import aiRouter from "./ai";
 import sessionsRouter from "./sessions";
 import settingsRouter from "./settings";
 import reportsRouter from "./reports";
+import cronRouter from "./cron";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(aiRouter);
 router.use(sessionsRouter);
 router.use(settingsRouter);
 router.use(reportsRouter);
+router.use(cronRouter);
 
 export default router;
