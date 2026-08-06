@@ -31,12 +31,9 @@ function readEnv(key: string): string | undefined {
 function requireEnv(key: string, hint?: string): string {
   const value = readEnv(key);
   if (!value) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(`[DEV WARNING] Missing env var "${key}". Using fallback.`);
-      if (key === 'GOOGLE_SERVICE_ACCOUNT_JSON') return '{}';
-      return `dev_fallback_${key.toLowerCase()}`;
-    }
-    throw new MissingEnvVarError(key, hint);
+    console.warn(`[SERVER WARNING] Missing env var "${key}". Using fallback until configured in Settings.`);
+    if (key === 'GOOGLE_SERVICE_ACCOUNT_JSON') return '{}';
+    return `fallback_${key.toLowerCase()}`;
   }
   return value;
 }
