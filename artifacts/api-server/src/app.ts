@@ -40,9 +40,31 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(env.sessionSecret));
 
-// Mount routes under both /api (for standalone server) and / (for Vercel serverless)
+import path from "path";
+import fs from "fs";
+
+// Mount API routes under /api
 app.use("/api", router);
-app.use(router);
+
+// Serve static frontend files in production / standalone server (Render)
+const possibleDistPaths = [
+  path.resolve(process.cwd(), "dist"),
+  path.resolve(process.cwd(), "artifacts/court-session-management/dist"),
+];
+
+const distPath = possibleDistPaths.find((p) => fs.existsSync(path.join(p, "index.html")));
+
+if (distPath) {
+  logger.info(`[Server] Serving static frontend from: ${distPath}`);
+  app.use(express.static(distPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  // Fallback for API-only mode
+  app.use(router);
+}
 
 export default app;
 

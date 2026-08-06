@@ -76,8 +76,8 @@ const statusLabelMap: Record<SessionStatus, string> = {
 
 const statusStyleMap: Record<SessionStatus, { badge: string; dot: string }> = {
   Today: {
-    badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    dot: 'bg-blue-500',
+    badge: 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-600/20',
+    dot: 'bg-emerald-600',
   },
   Upcoming: {
     badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',

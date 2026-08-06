@@ -122,7 +122,7 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   // Produces a self-contained CJS bundle at <root>/api/index.js that Vercel
   // discovers automatically as the /api/* serverless function.
   const rootDir = path.resolve(artifactDir, "..", "..");
-  const vercelHandlerSrc = path.resolve(rootDir, "api", "index.ts");
+  const vercelHandlerSrc = path.resolve(artifactDir, "src", "vercelHandler.ts");
   const vercelOutDir = path.resolve(rootDir, "api");
 
   await esbuild({

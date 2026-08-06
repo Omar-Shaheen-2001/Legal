@@ -41,8 +41,8 @@ export function Sidebar() {
       className="flex flex-col h-full sidebar-gradient"
       style={{
         background: theme === 'dark'
-          ? 'linear-gradient(160deg, #09172A 0%, #0F2747 55%, #071220 100%)'
-          : 'linear-gradient(160deg, #0F2747 0%, #163660 55%, #0A1B33 100%)',
+          ? 'linear-gradient(160deg, #051F17 0%, #093A2A 55%, #03120E 100%)'
+          : 'linear-gradient(160deg, #093A2A 0%, #0D4E3A 55%, #06261C 100%)',
         borderInlineStart: theme === 'dark'
           ? '1px solid rgba(255,255,255,0.06)'
           : '1px solid rgba(255,255,255,0.08)',

@@ -36,6 +36,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // ../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js
 var require_ms = __commonJS({
@@ -35307,6 +35308,13 @@ var require_moment_hijri = __commonJS({
   }
 });
 
+// src/vercelHandler.ts
+var vercelHandler_exports = {};
+__export(vercelHandler_exports, {
+  default: () => handler
+});
+module.exports = __toCommonJS(vercelHandler_exports);
+
 // src/app.ts
 var import_express10 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
@@ -57197,11 +57205,11 @@ app.use("/api", routes_default);
 app.use(routes_default);
 var app_default = app;
 
-// ../../api/index.ts
-module.exports = function handler(req, res) {
+// src/vercelHandler.ts
+function handler(req, res) {
   req.headers["x-forwarded-proto"] = "https";
   return app_default(req, res);
-};
+}
 /*! Bundled license information:
 
 depd/index.js:

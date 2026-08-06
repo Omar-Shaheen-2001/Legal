@@ -38,7 +38,7 @@ const statusLabelMap: Record<SessionStatus, string> = {
 };
 
 const statusStyleMap: Record<SessionStatus, string> = {
-  Today: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+  Today: 'bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border border-emerald-600/20',
   Upcoming: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
   Finished: 'bg-muted text-muted-foreground border border-border',
   Cancelled: 'bg-destructive/10 text-destructive border border-destructive/20',
