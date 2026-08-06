@@ -27,12 +27,28 @@ const queryClient = new QueryClient({
   },
 });
 
+import { GlobalSearch } from '@/components/global-search';
+
 function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[100dvh] overflow-hidden flex-row-reverse">
+    <div className="flex h-[100dvh] overflow-hidden flex-row-reverse flex-col md:flex-row-reverse">
       <aside className="w-64 flex-shrink-0 hidden md:block">
         <Sidebar />
       </aside>
+
+      {/* Mobile Top Header */}
+      <div className="md:hidden flex items-center justify-between p-3 border-b border-border bg-card">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+            ⚖
+          </div>
+          <span className="font-bold text-xs">إدارة الجلسات</span>
+        </div>
+        <div className="w-48">
+          <GlobalSearch className="bg-muted text-foreground border-border hover:bg-accent" />
+        </div>
+      </div>
+
       <main className="flex-1 overflow-y-auto">
         <ErrorBoundary>
           <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>

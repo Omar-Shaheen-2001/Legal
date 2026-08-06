@@ -4,6 +4,7 @@ import { useTheme } from './theme-provider';
 import { useLogout } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { GlobalSearch } from './global-search';
 
 const navigation = [
   { name: 'لوحة التحكم', path: '/', icon: LayoutDashboard },
@@ -50,7 +51,7 @@ export function Sidebar() {
     >
       {/* Logo/Brand */}
       <div
-        className="p-4"
+        className="p-4 space-y-3"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
       >
         <div className="flex items-center gap-2.5">
@@ -73,6 +74,9 @@ export function Sidebar() {
             </p>
           </div>
         </div>
+
+        {/* Global Search Button */}
+        <GlobalSearch />
       </div>
 
       {/* Navigation */}
