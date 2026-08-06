@@ -1,7 +1,16 @@
+import { useState } from 'react';
 import { Link } from 'wouter';
 import { useListSessions } from '@workspace/api-client-react';
-import { FileText, ChevronLeft, CheckCircle2, Clock, Scale, User } from 'lucide-react';
+import { FileText, ChevronLeft, CheckCircle2, Clock, Scale, User, ArrowUpDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { sortSessions, type SortOption } from '@/lib/session-sort';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function deriveEffectiveStatus(storedStatus: string, hearingAt: string | null | undefined) {
   if (storedStatus === 'Cancelled' || storedStatus === 'Finished') return storedStatus;
@@ -17,19 +26,39 @@ function deriveEffectiveStatus(storedStatus: string, hearingAt: string | null | 
 }
 
 export default function ReportsPage() {
+  const [sortBy, setSortBy] = useState<SortOption>('nearest');
   const { data: sessions, isLoading, error } = useListSessions();
+
+  const sortedSessions = Array.isArray(sessions) ? sortSessions(sessions, sortBy) : [];
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="fade-in-up">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-1 h-6 rounded-full bg-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">تقارير الجلسات</h1>
+      <div className="fade-in-up flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-6 rounded-full bg-primary" />
+            <h1 className="text-2xl font-bold tracking-tight">تقارير الجلسات</h1>
+          </div>
+          <p className="text-muted-foreground text-sm mr-3">
+            إدارة وعرض تقارير الجلسات مرتبة حسب التوقيت الأقرب
+          </p>
         </div>
-        <p className="text-muted-foreground text-sm mr-3">
-          إدارة وعرض تقارير الجلسات المُعدّة من قِبل المحامين
-        </p>
+
+        {/* Sort Select */}
+        <div className="flex items-center gap-2">
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="h-9 text-xs gap-1.5 bg-card border-border min-w-[170px]" data-testid="select-sort-reports">
+              <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <SelectValue placeholder="الترتيب" />
+            </SelectTrigger>
+            <SelectContent dir="rtl">
+              <SelectItem value="nearest">الأقرب زمناً (تلقائي)</SelectItem>
+              <SelectItem value="furthest">الأبعد زمناً</SelectItem>
+              <SelectItem value="newest">أحدث مضافاً</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Error */}
@@ -56,9 +85,9 @@ export default function ReportsPage() {
             </div>
           ))}
         </div>
-      ) : Array.isArray(sessions) && sessions.length > 0 ? (
+      ) : sortedSessions.length > 0 ? (
         <div className="space-y-3 fade-in-up fade-in-up-delay-2">
-          {sessions.map((session, i) => {
+          {sortedSessions.map((session, i) => {
             const effectiveStatus = deriveEffectiveStatus(session.status, session.hearingAt);
             const isFinished = effectiveStatus === 'Finished';
 

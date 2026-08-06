@@ -35320,6 +35320,9 @@ var import_express10 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_cookie_parser = __toESM(require_cookie_parser(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
+var import_path3 = __toESM(require("path"), 1);
+var import_fs2 = __toESM(require("fs"), 1);
+var import_url2 = require("url");
 
 // src/routes/index.ts
 var import_express9 = __toESM(require_express2(), 1);
@@ -39467,15 +39470,6 @@ function saveSettings(patch) {
 }
 
 // src/config/env.ts
-var MissingEnvVarError = class extends Error {
-  constructor(key, hint) {
-    super(
-      `Missing required environment variable "${key}".${hint ? ` ${hint}` : ""}`
-    );
-    this.key = key;
-    this.name = "MissingEnvVarError";
-  }
-};
 function readEnv(key) {
   const value = process.env[key];
   return value && value.trim().length > 0 ? value : void 0;
@@ -39483,12 +39477,9 @@ function readEnv(key) {
 function requireEnv(key, hint) {
   const value = readEnv(key);
   if (!value) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(`[DEV WARNING] Missing env var "${key}". Using fallback.`);
-      if (key === "GOOGLE_SERVICE_ACCOUNT_JSON") return "{}";
-      return `dev_fallback_${key.toLowerCase()}`;
-    }
-    throw new MissingEnvVarError(key, hint);
+    console.warn(`[SERVER WARNING] Missing env var "${key}". Using fallback until configured in Settings.`);
+    if (key === "GOOGLE_SERVICE_ACCOUNT_JSON") return "{}";
+    return `fallback_${key.toLowerCase()}`;
   }
   return value;
 }
@@ -40225,10 +40216,34 @@ function deriveEffectiveStatus(session) {
   const isSameDay = meccaHearing.getUTCFullYear() === meccaNow.getUTCFullYear() && meccaHearing.getUTCMonth() === meccaNow.getUTCMonth() && meccaHearing.getUTCDate() === meccaNow.getUTCDate();
   return isSameDay ? "Today" : "Upcoming";
 }
+function sortSessionsByNearestTime(sessions) {
+  const now = Date.now();
+  return [...sessions].sort((a, b) => {
+    const timeA = a.hearingAt ? new Date(a.hearingAt).getTime() : null;
+    const timeB = b.hearingAt ? new Date(b.hearingAt).getTime() : null;
+    const validA = timeA !== null && !isNaN(timeA);
+    const validB = timeB !== null && !isNaN(timeB);
+    if (validA && validB) {
+      const isPastA = timeA < now;
+      const isPastB = timeB < now;
+      if (!isPastA && isPastB) return -1;
+      if (isPastA && !isPastB) return 1;
+      if (!isPastA && !isPastB) {
+        return timeA - timeB;
+      }
+      if (isPastA && isPastB) {
+        return timeB - timeA;
+      }
+    }
+    if (validA && !validB) return -1;
+    if (!validA && validB) return 1;
+    return (b.id ?? 0) - (a.id ?? 0);
+  });
+}
 async function listSessions(statusFilter) {
   await ensureSheetReady();
   const rows = await listRows();
-  const sessions = rows.map(({ id, values }) => {
+  let sessions = rows.map(({ id, values }) => {
     const s = rowToSession(id, values);
     const expectedDay = computeSessionDayStr(s.sessionDateHijri, s.sessionTime);
     const expectedRemaining = computeDaysRemainingStr(s.sessionDateHijri, s.sessionTime);
@@ -40241,11 +40256,11 @@ async function listSessions(statusFilter) {
       }).catch((err) => logger.warn({ err, id }, "Failed to auto-sync row cells"));
     }
     return s;
-  }).reverse();
-  if (!statusFilter) {
-    return sessions;
+  });
+  if (statusFilter) {
+    sessions = sessions.filter((s) => deriveEffectiveStatus(s) === statusFilter);
   }
-  return sessions.filter((s) => deriveEffectiveStatus(s) === statusFilter);
+  return sortSessionsByNearestTime(sessions);
 }
 async function getSessionById(id) {
   const rows = await listRows();
@@ -57175,8 +57190,9 @@ router9.use(cron_default);
 var routes_default = router9;
 
 // src/app.ts
-var import_path3 = __toESM(require("path"), 1);
-var import_fs2 = __toESM(require("fs"), 1);
+var import_meta2 = {};
+var __filename = (0, import_url2.fileURLToPath)(import_meta2.url);
+var __dirname2 = import_path3.default.dirname(__filename);
 var app = (0, import_express10.default)();
 app.set("trust proxy", 1);
 var pinoHttpMiddleware = import_pino_http.default.default || import_pino_http.default;
@@ -57207,19 +57223,26 @@ app.use("/api", routes_default);
 var possibleDistPaths = [
   import_path3.default.resolve(process.cwd(), "dist"),
   import_path3.default.resolve(process.cwd(), "artifacts/court-session-management/dist"),
-  import_path3.default.resolve(process.cwd(), "../court-session-management/dist"),
-  import_path3.default.resolve(__dirname, "../../court-session-management/dist"),
-  import_path3.default.resolve(__dirname, "../../../dist")
+  import_path3.default.resolve(__dirname2, "../../court-session-management/dist"),
+  import_path3.default.resolve(__dirname2, "../dist"),
+  import_path3.default.resolve(__dirname2, "../../dist")
 ];
-var distPath = possibleDistPaths.find((p) => import_fs2.default.existsSync(import_path3.default.join(p, "index.html")));
+var distPath = possibleDistPaths.find((p) => {
+  try {
+    return import_fs2.default.existsSync(import_path3.default.join(p, "index.html"));
+  } catch {
+    return false;
+  }
+});
 if (distPath) {
   logger.info(`[Server] Serving static frontend from: ${distPath}`);
   app.use(import_express10.default.static(distPath));
-  app.get("*", (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api")) return next();
     res.sendFile(import_path3.default.join(distPath, "index.html"));
   });
 } else {
+  logger.warn("[Server] No dist/index.html found \u2014 frontend will not be served.");
   app.use(routes_default);
 }
 var app_default = app;

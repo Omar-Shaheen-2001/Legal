@@ -199,10 +199,43 @@ function deriveEffectiveStatus(session: Session): SessionStatus {
   return isSameDay ? "Today" : "Upcoming";
 }
 
+export function sortSessionsByNearestTime(sessions: Session[]): Session[] {
+  const now = Date.now();
+
+  return [...sessions].sort((a, b) => {
+    const timeA = a.hearingAt ? new Date(a.hearingAt).getTime() : null;
+    const timeB = b.hearingAt ? new Date(b.hearingAt).getTime() : null;
+
+    const validA = timeA !== null && !isNaN(timeA);
+    const validB = timeB !== null && !isNaN(timeB);
+
+    if (validA && validB) {
+      const isPastA = timeA! < now;
+      const isPastB = timeB! < now;
+
+      if (!isPastA && isPastB) return -1;
+      if (isPastA && !isPastB) return 1;
+
+      if (!isPastA && !isPastB) {
+        return timeA! - timeB!;
+      }
+
+      if (isPastA && isPastB) {
+        return timeB! - timeA!;
+      }
+    }
+
+    if (validA && !validB) return -1;
+    if (!validA && validB) return 1;
+
+    return (b.id ?? 0) - (a.id ?? 0);
+  });
+}
+
 export async function listSessions(statusFilter?: SessionStatus): Promise<Session[]> {
   await ensureSheetReady();
   const rows = await listRows();
-  const sessions = rows
+  let sessions = rows
     .map(({ id, values }) => {
       const s = rowToSession(id, values);
       const expectedDay = computeSessionDayStr(s.sessionDateHijri, s.sessionTime);
@@ -218,12 +251,13 @@ export async function listSessions(statusFilter?: SessionStatus): Promise<Sessio
         }).catch((err) => logger.warn({ err, id }, "Failed to auto-sync row cells"));
       }
       return s;
-    })
-    .reverse(); // newest (last appended row) first
-  if (!statusFilter) {
-    return sessions;
+    });
+
+  if (statusFilter) {
+    sessions = sessions.filter((s) => deriveEffectiveStatus(s) === statusFilter);
   }
-  return sessions.filter((s) => deriveEffectiveStatus(s) === statusFilter);
+
+  return sortSessionsByNearestTime(sessions);
 }
 
 export async function getSessionById(id: number): Promise<Session | null> {
