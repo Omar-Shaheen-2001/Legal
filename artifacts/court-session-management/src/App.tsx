@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -7,6 +7,9 @@ import { AuthGuard } from '@/components/auth-guard';
 import { Sidebar } from '@/components/sidebar';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu, Scale } from 'lucide-react';
+import { GlobalSearch } from '@/components/global-search';
 
 const NotFound = React.lazy(() => import('@/pages/not-found'));
 const LoginPage = React.lazy(() => import('@/pages/login'));
@@ -27,24 +30,43 @@ const queryClient = new QueryClient({
   },
 });
 
-import { GlobalSearch } from '@/components/global-search';
-
 function AppShell({ children }: { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
-    <div className="flex h-[100dvh] overflow-hidden flex-row-reverse flex-col md:flex-row-reverse">
+    <div className="flex h-[100dvh] overflow-hidden flex-col md:flex-row-reverse">
+      {/* Desktop Sidebar */}
       <aside className="w-64 flex-shrink-0 hidden md:block">
         <Sidebar />
       </aside>
 
-      {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-between p-3 border-b border-border bg-card">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-            ⚖
+      {/* Mobile Top Header & Drawer */}
+      <div className="md:hidden flex items-center justify-between p-3 border-b border-border bg-card shrink-0 gap-2" dir="rtl">
+        <div className="flex items-center gap-2 min-w-0">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <button
+                className="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-foreground hover:bg-accent shrink-0"
+                aria-label="فتح القائمة الجانبية"
+                data-testid="button-mobile-menu-trigger"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="p-0 w-72 border-none bg-transparent shadow-2xl">
+              <Sidebar onNavigate={() => setMobileOpen(false)} />
+            </SheetContent>
+          </Sheet>
+
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <Scale className="w-3.5 h-3.5 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-xs truncate">إدارة الجلسات</span>
           </div>
-          <span className="font-bold text-xs">إدارة الجلسات</span>
         </div>
-        <div className="w-48">
+
+        <div className="w-36 sm:w-48">
           <GlobalSearch className="bg-muted text-foreground border-border hover:bg-accent" />
         </div>
       </div>

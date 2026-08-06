@@ -14,7 +14,11 @@ const navigation = [
   { name: 'الإعدادات', path: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
@@ -22,6 +26,7 @@ export function Sidebar() {
   const logoutMutation = useLogout();
 
   const handleLogout = () => {
+    onNavigate?.();
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
         queryClient.clear();
@@ -96,6 +101,7 @@ export function Sidebar() {
             <Link
               key={item.path}
               href={item.path}
+              onClick={() => onNavigate?.()}
               data-testid={`nav-${item.path === '/' ? 'dashboard' : item.path.slice(1)}`}
             >
               <div
