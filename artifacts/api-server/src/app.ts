@@ -50,6 +50,9 @@ app.use("/api", router);
 const possibleDistPaths = [
   path.resolve(process.cwd(), "dist"),
   path.resolve(process.cwd(), "artifacts/court-session-management/dist"),
+  path.resolve(process.cwd(), "../court-session-management/dist"),
+  path.resolve(__dirname, "../../court-session-management/dist"),
+  path.resolve(__dirname, "../../../dist"),
 ];
 
 const distPath = possibleDistPaths.find((p) => fs.existsSync(path.join(p, "index.html")));
