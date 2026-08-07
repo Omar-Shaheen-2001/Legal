@@ -541,8 +541,8 @@ export default function SessionReportPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '3px solid #B88A3B', backgroundColor: '#ffffff' }}>
             <tbody>
               <tr>
-                <td style={{ padding: '10px 24px', verticalAlign: 'top', width: '45%' }}>
-                  <img src="/logo.png" alt="Mohammed Alay Logo" style={{ height: '175px', objectFit: 'contain', display: 'block' }} />
+                <td style={{ padding: '12px 24px', verticalAlign: 'top', width: '45%' }}>
+                  <img src="/logo.png" alt="Mohammed Alay Logo" style={{ height: '110px', maxHeight: '120px', maxWidth: '280px', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
                 </td>
                 <td style={{ padding: '0' }} />
                 <td style={{ verticalAlign: 'top', textAlign: 'left', width: '260px', padding: '0' }}>
