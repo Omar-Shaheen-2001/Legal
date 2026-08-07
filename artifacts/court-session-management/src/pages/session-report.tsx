@@ -332,11 +332,10 @@ export default function SessionReportPage() {
         pagebreak: { mode: 'avoid-all' },
       };
 
-      const worker = html2pdf().set(opt).from(element).toPdf().get('pdf').then((pdf: any) => {
-        const totalPages = pdf.internal.getNumberOfPages();
-        for (let i = totalPages; i > 1; i--) pdf.deletePage(i);
-      });
-      await (worker as any).save();
+      await html2pdf()
+        .set(opt)
+        .from(element)
+        .save();
 
       setDownloaded(true);
       toast({
@@ -542,8 +541,8 @@ export default function SessionReportPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '3px solid #B88A3B', backgroundColor: '#ffffff' }}>
             <tbody>
               <tr>
-                <td style={{ padding: '20px 24px', verticalAlign: 'middle', width: '40%' }}>
-                  <img src="/logo.png" alt="Mohammed Alay Logo" style={{ height: '150px', objectFit: 'contain', display: 'block' }} />
+                <td style={{ padding: '10px 24px', verticalAlign: 'top', width: '45%' }}>
+                  <img src="/logo.png" alt="Mohammed Alay Logo" style={{ height: '175px', objectFit: 'contain', display: 'block' }} />
                 </td>
                 <td style={{ padding: '0' }} />
                 <td style={{ verticalAlign: 'top', textAlign: 'left', width: '260px', padding: '0' }}>
@@ -587,7 +586,7 @@ export default function SessionReportPage() {
           </table>
 
           {/* ── Body ── */}
-          <div style={{ padding: '32px', backgroundColor: '#ffffff' }}>
+          <div style={{ padding: '20px 24px', backgroundColor: '#ffffff' }}>
 
             {/* Report Number Badge */}
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
