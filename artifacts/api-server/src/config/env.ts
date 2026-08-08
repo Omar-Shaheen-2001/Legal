@@ -64,16 +64,17 @@ export const env = {
     try {
       const fs = require("fs");
       const path = require("path");
-      // The file is located in the root of the workspace
-      const saPath = path.resolve(process.cwd(), "..", "..", "service-account.json");
-      if (fs.existsSync(saPath)) {
-        return JSON.parse(fs.readFileSync(saPath, "utf-8"));
-      }
-      
-      // Fallback to checking the current working directory as well
-      const localPath = path.resolve(process.cwd(), "service-account.json");
-      if (fs.existsSync(localPath)) {
-        return JSON.parse(fs.readFileSync(localPath, "utf-8"));
+      const candidates = [
+        path.resolve(process.cwd(), "service-account.json"),
+        path.resolve(process.cwd(), "..", "..", "service-account.json"),
+        path.resolve(process.cwd(), "artifacts", "api-server", "service-account.json"),
+        path.resolve(__dirname, "..", "..", "service-account.json"),
+        path.resolve(__dirname, "..", "..", "..", "service-account.json"),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          return JSON.parse(fs.readFileSync(p, "utf-8"));
+        }
       }
     } catch (e) {
       // Ignore filesystem errors and fallback to env var
@@ -158,8 +159,14 @@ export function isGoogleSheetsConfigured(): boolean {
     try {
       const fs = require("fs");
       const path = require("path");
-      hasServiceAccount = fs.existsSync(path.resolve(process.cwd(), "..", "..", "service-account.json")) || 
-                          fs.existsSync(path.resolve(process.cwd(), "service-account.json"));
+      const candidates = [
+        path.resolve(process.cwd(), "service-account.json"),
+        path.resolve(process.cwd(), "..", "..", "service-account.json"),
+        path.resolve(process.cwd(), "artifacts", "api-server", "service-account.json"),
+        path.resolve(__dirname, "..", "..", "service-account.json"),
+        path.resolve(__dirname, "..", "..", "..", "service-account.json"),
+      ];
+      hasServiceAccount = candidates.some((p) => fs.existsSync(p));
     } catch(e) {}
   }
   

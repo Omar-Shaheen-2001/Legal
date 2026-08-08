@@ -247,6 +247,63 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /sessions/{id}/report:
+    get:
+      operationId: getSessionReport
+      tags: [sessions]
+      summary: Get the report for a court session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session report (or null if none exists)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SessionReport"
+                  - type: "null"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      operationId: upsertSessionReport
+      tags: [sessions]
+      summary: Create or update the report for a court session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionReportInput"
+      responses:
+        "200":
+          description: Updated session report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionReport"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -285,7 +342,7 @@ components:
     DashboardStats:
       type: object
       required:
-        [totalCases, todayHearings, upcomingHearings, finishedHearings]
+        [totalCases, todayHearings, upcomingHearings, finishedHearings, totalPoas]
       properties:
         totalCases:
           type: integer
@@ -294,6 +351,8 @@ components:
         upcomingHearings:
           type: integer
         finishedHearings:
+          type: integer
+        totalPoas:
           type: integer
 
     MessageInput:
@@ -457,3 +516,68 @@ components:
           type: ["string", "null"]
           format: date-time
           description: Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.
+
+    SessionReportInput:
+      type: object
+      description: Input fields for creating or updating a session report
+      properties:
+        reportNumber:
+          type: string
+        lawyerName:
+          type: string
+        summary:
+          type: string
+        courtDecision:
+          type: string
+        nextSessionDate:
+          type: string
+        nextSessionTime:
+          type: string
+        ourActionRequired:
+          type: string
+        clientActionRequired:
+          type: string
+        reportDate:
+          type: string
+
+    SessionReport:
+      type: object
+      required:
+        [
+          reportNumber,
+          lawyerName,
+          summary,
+          courtDecision,
+          nextSessionDate,
+          nextSessionTime,
+          ourActionRequired,
+          clientActionRequired,
+          reportDate,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        reportNumber:
+          type: string
+        lawyerName:
+          type: string
+        summary:
+          type: string
+        courtDecision:
+          type: string
+        nextSessionDate:
+          type: string
+        nextSessionTime:
+          type: string
+        ourActionRequired:
+          type: string
+        clientActionRequired:
+          type: string
+        reportDate:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

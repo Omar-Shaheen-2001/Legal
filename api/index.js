@@ -39235,7 +39235,8 @@ var GetDashboardStatsResponse = objectType({
   "totalCases": numberType(),
   "todayHearings": numberType(),
   "upcomingHearings": numberType(),
-  "finishedHearings": numberType()
+  "finishedHearings": numberType(),
+  "totalPoas": numberType()
 });
 var AnalyzeMessageBody = objectType({
   "message": stringType().min(1).describe("Raw court SMS text pasted by the secretary")
@@ -39270,8 +39271,8 @@ var ListSessionsResponseItem = objectType({
   "status": enumType(["Upcoming", "Today", "Finished", "Cancelled"]),
   "reminder24": booleanType(),
   "reminder6": booleanType(),
-  "createdAt": stringType(),
-  "hearingAt": stringType().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
+  "createdAt": coerce.date(),
+  "hearingAt": coerce.date().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
 });
 var ListSessionsResponse = arrayType(ListSessionsResponseItem);
 var CreateSessionBody = objectType({
@@ -39301,8 +39302,8 @@ var CreateSessionResponse = objectType({
   "status": enumType(["Upcoming", "Today", "Finished", "Cancelled"]),
   "reminder24": booleanType(),
   "reminder6": booleanType(),
-  "createdAt": stringType(),
-  "hearingAt": stringType().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
+  "createdAt": coerce.date(),
+  "hearingAt": coerce.date().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
 });
 var GetSessionParams = objectType({
   "id": coerce.number()
@@ -39322,8 +39323,8 @@ var GetSessionResponse = objectType({
   "status": enumType(["Upcoming", "Today", "Finished", "Cancelled"]),
   "reminder24": booleanType(),
   "reminder6": booleanType(),
-  "createdAt": stringType(),
-  "hearingAt": stringType().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
+  "createdAt": coerce.date(),
+  "hearingAt": coerce.date().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
 });
 var UpdateSessionParams = objectType({
   "id": coerce.number()
@@ -39356,13 +39357,56 @@ var UpdateSessionResponse = objectType({
   "status": enumType(["Upcoming", "Today", "Finished", "Cancelled"]),
   "reminder24": booleanType(),
   "reminder6": booleanType(),
-  "createdAt": stringType(),
-  "hearingAt": stringType().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
+  "createdAt": coerce.date(),
+  "hearingAt": coerce.date().nullable().describe("Computed UTC datetime of the hearing (from sessionDateHijri + sessionTime). Null if either field is missing or unparseable.")
 });
 var DeleteSessionParams = objectType({
   "id": coerce.number()
 });
 var DeleteSessionResponse = voidType();
+var GetSessionReportParams = objectType({
+  "id": coerce.number()
+});
+var GetSessionReportResponse = unionType([objectType({
+  "reportNumber": stringType(),
+  "lawyerName": stringType(),
+  "summary": stringType(),
+  "courtDecision": stringType(),
+  "nextSessionDate": stringType(),
+  "nextSessionTime": stringType(),
+  "ourActionRequired": stringType(),
+  "clientActionRequired": stringType(),
+  "reportDate": stringType(),
+  "createdAt": coerce.date(),
+  "updatedAt": coerce.date()
+}), nullType()]);
+var UpsertSessionReportParams = objectType({
+  "id": coerce.number()
+});
+var UpsertSessionReportBody = objectType({
+  "reportNumber": stringType().optional(),
+  "lawyerName": stringType().optional(),
+  "summary": stringType().optional(),
+  "courtDecision": stringType().optional(),
+  "nextSessionDate": stringType().optional(),
+  "nextSessionTime": stringType().optional(),
+  "ourActionRequired": stringType().optional(),
+  "clientActionRequired": stringType().optional(),
+  "reportDate": stringType().optional()
+}).describe("Input fields for creating or updating a session report");
+var UpsertSessionReportResponse = objectType({
+  "reportNumber": stringType(),
+  "lawyerName": stringType(),
+  "summary": stringType(),
+  "courtDecision": stringType(),
+  "nextSessionDate": stringType(),
+  "nextSessionTime": stringType(),
+  "ourActionRequired": stringType(),
+  "clientActionRequired": stringType(),
+  "reportDate": stringType(),
+  "createdAt": coerce.date(),
+  "updatedAt": coerce.date()
+});
 
 // src/routes/health.ts
 var router = (0, import_express.Router)();
@@ -39402,18 +39446,27 @@ var TMP_SETTINGS_PATH = (0, import_path.resolve)("/tmp", "settings.json");
 var LOCAL_SETTINGS_PATH = (0, import_path.resolve)(process.cwd(), "settings.json");
 var ALT_SETTINGS_PATH = (0, import_path.resolve)(process.cwd(), "artifacts", "api-server", "settings.json");
 function loadFromDisk() {
-  const pathsToTry = [TMP_SETTINGS_PATH, LOCAL_SETTINGS_PATH, ALT_SETTINGS_PATH];
+  const pathsToTry = [
+    LOCAL_SETTINGS_PATH,
+    ALT_SETTINGS_PATH,
+    (0, import_path.resolve)(__dirname, "..", "..", "settings.json"),
+    (0, import_path.resolve)(__dirname, "..", "..", "..", "settings.json"),
+    TMP_SETTINGS_PATH
+  ];
+  let result = {};
   for (const p of pathsToTry) {
     try {
       if ((0, import_fs.existsSync)(p)) {
         const raw = (0, import_fs.readFileSync)(p, "utf-8");
         const parsed = JSON.parse(raw);
-        return parsed;
+        if (parsed && typeof parsed === "object") {
+          result = { ...parsed, ...result };
+        }
       }
     } catch {
     }
   }
-  return {};
+  return result;
 }
 function saveToDisk(settings) {
   const content = JSON.stringify(settings, null, 2);
@@ -39508,13 +39561,17 @@ var env = {
     try {
       const fs2 = require("fs");
       const path3 = require("path");
-      const saPath = path3.resolve(process.cwd(), "..", "..", "service-account.json");
-      if (fs2.existsSync(saPath)) {
-        return JSON.parse(fs2.readFileSync(saPath, "utf-8"));
-      }
-      const localPath = path3.resolve(process.cwd(), "service-account.json");
-      if (fs2.existsSync(localPath)) {
-        return JSON.parse(fs2.readFileSync(localPath, "utf-8"));
+      const candidates = [
+        path3.resolve(process.cwd(), "service-account.json"),
+        path3.resolve(process.cwd(), "..", "..", "service-account.json"),
+        path3.resolve(process.cwd(), "artifacts", "api-server", "service-account.json"),
+        path3.resolve(__dirname, "..", "..", "service-account.json"),
+        path3.resolve(__dirname, "..", "..", "..", "service-account.json")
+      ];
+      for (const p of candidates) {
+        if (fs2.existsSync(p)) {
+          return JSON.parse(fs2.readFileSync(p, "utf-8"));
+        }
       }
     } catch (e) {
     }
@@ -39591,7 +39648,14 @@ function isGoogleSheetsConfigured() {
     try {
       const fs2 = require("fs");
       const path3 = require("path");
-      hasServiceAccount = fs2.existsSync(path3.resolve(process.cwd(), "..", "..", "service-account.json")) || fs2.existsSync(path3.resolve(process.cwd(), "service-account.json"));
+      const candidates = [
+        path3.resolve(process.cwd(), "service-account.json"),
+        path3.resolve(process.cwd(), "..", "..", "service-account.json"),
+        path3.resolve(process.cwd(), "artifacts", "api-server", "service-account.json"),
+        path3.resolve(__dirname, "..", "..", "service-account.json"),
+        path3.resolve(__dirname, "..", "..", "..", "service-account.json")
+      ];
+      hasServiceAccount = candidates.some((p) => fs2.existsSync(p));
     } catch (e) {
     }
   }
@@ -40075,6 +40139,168 @@ function computeHearingDateTime(sessionDateHijri, sessionTime) {
   }
 }
 
+// src/services/poa.sheets.service.ts
+var import_googleapis2 = require("googleapis");
+var POA_SHEET_NAME = "Attorney";
+var POA_SHEET_COLUMNS = [
+  "\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064A\u0644",
+  "\u0631\u0642\u0645 \u0627\u0644\u0648\u0643\u0627\u0644\u0629",
+  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0635\u062F\u0627\u0631 \u0647\u062C\u0631\u064A",
+  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0627\u0646\u062A\u0647\u0627\u0621 \u0647\u062C\u0631\u064A",
+  "\u0627\u0644\u0623\u064A\u0627\u0645 \u0627\u0644\u0645\u062A\u0628\u0642\u064A\u0629",
+  "\u0645\u0644\u0627\u062D\u0638\u0627\u062A",
+  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0646\u0634\u0627\u0621"
+];
+var POA_COLS = POA_SHEET_COLUMNS.length;
+var COL_LAST = String.fromCharCode("A".charCodeAt(0) + POA_COLS - 1);
+var sheetsClient2 = null;
+function getClient2() {
+  if (!sheetsClient2) {
+    const credentials = env.googleServiceAccountJson;
+    if (!credentials.client_email || !credentials.private_key) {
+      throw new Error(
+        "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email/private_key."
+      );
+    }
+    const privateKey = credentials.private_key.replace(/\\n/g, "\n");
+    const auth = new import_googleapis2.google.auth.JWT({
+      email: credentials.client_email,
+      key: privateKey,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
+    sheetsClient2 = import_googleapis2.google.sheets({ version: "v4", auth });
+  }
+  return sheetsClient2;
+}
+var poaSheetIdCache = null;
+var isPoaSheetReadyCache = false;
+var poaDataCache = null;
+var lastPoaCacheTime = 0;
+var POA_CACHE_TTL_MS = 15e3;
+function invalidatePoaCache() {
+  poaDataCache = null;
+  lastPoaCacheTime = 0;
+}
+async function getPoaSheetId() {
+  if (poaSheetIdCache !== null) return poaSheetIdCache;
+  const sheets = getClient2();
+  const spreadsheet = await sheets.spreadsheets.get({
+    spreadsheetId: env.googleSpreadsheetId
+  });
+  const sheet = spreadsheet.data.sheets?.find(
+    (s) => s.properties?.title === POA_SHEET_NAME
+  );
+  if (!sheet?.properties && sheet?.properties?.sheetId === void 0) {
+    throw new Error(`Sheet tab "${POA_SHEET_NAME}" not found.`);
+  }
+  poaSheetIdCache = sheet.properties.sheetId;
+  return poaSheetIdCache;
+}
+async function ensurePoaSheetReady() {
+  if (isPoaSheetReadyCache) return;
+  try {
+    const sheets = getClient2();
+    const spreadsheet = await sheets.spreadsheets.get({
+      spreadsheetId: env.googleSpreadsheetId
+    });
+    const existing = spreadsheet.data.sheets?.find(
+      (s) => s.properties?.title === POA_SHEET_NAME
+    );
+    if (!existing) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: env.googleSpreadsheetId,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: POA_SHEET_NAME } } }]
+        }
+      });
+      poaSheetIdCache = null;
+      logger.info(`Created sheet tab "${POA_SHEET_NAME}"`);
+    }
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: env.googleSpreadsheetId,
+      range: `${POA_SHEET_NAME}!A1:${COL_LAST}1`,
+      valueInputOption: "RAW",
+      requestBody: { values: [[...POA_SHEET_COLUMNS]] }
+    });
+    isPoaSheetReadyCache = true;
+  } catch (err) {
+    isPoaSheetReadyCache = false;
+    logger.warn({ err }, "ensurePoaSheetReady non-fatal warning");
+  }
+}
+async function listPoaRows(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && poaDataCache !== null && now - lastPoaCacheTime < POA_CACHE_TTL_MS) {
+    return poaDataCache;
+  }
+  await ensurePoaSheetReady();
+  try {
+    const sheets = getClient2();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: env.googleSpreadsheetId,
+      range: `${POA_SHEET_NAME}!A2:${COL_LAST}`
+    });
+    const rows = response.data.values ?? [];
+    const result = rows.map((row, index) => ({ id: index + 2, values: row })).filter((row) => row.values.some((cell2) => cell2 !== void 0 && cell2 !== ""));
+    poaDataCache = result;
+    lastPoaCacheTime = now;
+    return result;
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch POA rows from Google Sheets, returning cached/empty");
+    return poaDataCache ?? [];
+  }
+}
+async function appendPoaRow(values) {
+  invalidatePoaCache();
+  const sheets = getClient2();
+  const response = await sheets.spreadsheets.values.append({
+    spreadsheetId: env.googleSpreadsheetId,
+    range: `${POA_SHEET_NAME}!A:${COL_LAST}`,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: [values] }
+  });
+  const updatedRange = response.data.updates?.updatedRange;
+  const match = updatedRange?.match(/![A-Z]+(\d+):/);
+  if (match) return Number(match[1]);
+  const rows = await listPoaRows(true);
+  const last = rows[rows.length - 1];
+  if (!last) throw new Error("Failed to determine id of newly created POA row.");
+  return last.id;
+}
+async function updatePoaRow(id, values) {
+  invalidatePoaCache();
+  const sheets = getClient2();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: env.googleSpreadsheetId,
+    range: `${POA_SHEET_NAME}!A${id}:${COL_LAST}${id}`,
+    valueInputOption: "RAW",
+    requestBody: { values: [values] }
+  });
+}
+async function deletePoaRow(id) {
+  invalidatePoaCache();
+  const sheets = getClient2();
+  const sheetId = await getPoaSheetId();
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: env.googleSpreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: id - 1,
+              endIndex: id
+            }
+          }
+        }
+      ]
+    }
+  });
+}
+
 // src/services/session.service.ts
 var COLUMN_INDEX = {
   // Arabic headers
@@ -40373,7 +40599,18 @@ async function deleteSession(id) {
   return true;
 }
 async function getDashboardStats() {
-  const sessions = await listSessions();
+  const [sessionsRes, poaRes] = await Promise.allSettled([
+    listSessions(),
+    listPoaRows()
+  ]);
+  const sessions = sessionsRes.status === "fulfilled" ? sessionsRes.value : [];
+  const poaRows = poaRes.status === "fulfilled" ? poaRes.value : [];
+  if (sessionsRes.status === "rejected") {
+    logger.warn({ err: sessionsRes.reason }, "Failed to load sessions for dashboard stats");
+  }
+  if (poaRes.status === "rejected") {
+    logger.warn({ err: poaRes.reason }, "Failed to load POA rows for dashboard stats");
+  }
   let todayHearings = 0;
   let upcomingHearings = 0;
   let finishedHearings = 0;
@@ -40387,7 +40624,8 @@ async function getDashboardStats() {
     totalCases: sessions.length,
     todayHearings,
     upcomingHearings,
-    finishedHearings
+    finishedHearings,
+    totalPoas: poaRows.length
   };
 }
 async function markReminderSent(id, kind) {
@@ -40445,7 +40683,9 @@ router3.get("/dashboard/stats", attachAuthUser, requireAuth, async (_req, res) =
     res.json(data);
   } catch (err) {
     logger.error({ err }, "Failed to load dashboard stats");
-    res.status(500).json({ error: "Failed to load dashboard stats." });
+    const isClockError = String(err?.message || "").includes("invalid_grant") || String(err?.stack || "").includes("invalid_grant");
+    const errorMsg = isClockError ? "\u0641\u0634\u0644 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0628\u0640 Google Sheets \u0628\u0633\u0628\u0628 \u0639\u062F\u0645 \u062A\u0632\u0627\u0645\u0646 \u062A\u0627\u0631\u064A\u062E \u0648\u062A\u0648\u0642\u064A\u062A \u0627\u0644\u062C\u0647\u0627\u0632 \u0645\u0639 \u0633\u064A\u0631\u0641\u0631\u0627\u062A Google (invalid_grant)." : "\u0641\u0634\u0644 \u062A\u062D\u0645\u064A\u0644 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0644\u0648\u062D\u0629 \u0627\u0644\u062A\u062D\u0643\u0645.";
+    res.status(500).json({ error: errorMsg });
   }
 });
 var dashboard_default = router3;
@@ -56727,7 +56967,9 @@ router5.get("/sessions", attachAuthUser, requireAuth, async (req, res) => {
     res.json(data);
   } catch (err) {
     logger.error({ err }, "Failed to list sessions");
-    res.status(500).json({ error: "Failed to load sessions." });
+    const isClockError = String(err?.message || "").includes("invalid_grant") || String(err?.stack || "").includes("invalid_grant");
+    const errorMsg = isClockError ? "\u0641\u0634\u0644 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0628\u0640 Google Sheets \u0628\u0633\u0628\u0628 \u0639\u062F\u0645 \u062A\u0632\u0627\u0645\u0646 \u062A\u0627\u0631\u064A\u062E \u0648\u062A\u0648\u0642\u064A\u062A \u0627\u0644\u062C\u0647\u0627\u0632 \u0645\u0639 \u0633\u064A\u0631\u0641\u0631\u0627\u062A Google (invalid_grant)." : "\u0641\u0634\u0644 \u062A\u062D\u0645\u064A\u0644 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062C\u0644\u0633\u0627\u062A.";
+    res.status(500).json({ error: errorMsg });
   }
 });
 router5.post("/sessions", attachAuthUser, requireAuth, async (req, res) => {
@@ -57214,164 +57456,6 @@ var cron_default = router8;
 
 // src/routes/poa.ts
 var import_express9 = __toESM(require_express2(), 1);
-
-// src/services/poa.sheets.service.ts
-var import_googleapis2 = require("googleapis");
-var POA_SHEET_NAME = "Attorney";
-var POA_SHEET_COLUMNS = [
-  "\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064A\u0644",
-  "\u0631\u0642\u0645 \u0627\u0644\u0648\u0643\u0627\u0644\u0629",
-  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0635\u062F\u0627\u0631 \u0647\u062C\u0631\u064A",
-  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0627\u0646\u062A\u0647\u0627\u0621 \u0647\u062C\u0631\u064A",
-  "\u0627\u0644\u0623\u064A\u0627\u0645 \u0627\u0644\u0645\u062A\u0628\u0642\u064A\u0629",
-  "\u0645\u0644\u0627\u062D\u0638\u0627\u062A",
-  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0646\u0634\u0627\u0621"
-];
-var POA_COLS = POA_SHEET_COLUMNS.length;
-var COL_LAST = String.fromCharCode("A".charCodeAt(0) + POA_COLS - 1);
-var sheetsClient2 = null;
-function getClient2() {
-  if (!sheetsClient2) {
-    const credentials = env.googleServiceAccountJson;
-    if (!credentials.client_email || !credentials.private_key) {
-      throw new Error(
-        "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email/private_key."
-      );
-    }
-    const privateKey = credentials.private_key.replace(/\\n/g, "\n");
-    const auth = new import_googleapis2.google.auth.JWT({
-      email: credentials.client_email,
-      key: privateKey,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
-    });
-    sheetsClient2 = import_googleapis2.google.sheets({ version: "v4", auth });
-  }
-  return sheetsClient2;
-}
-var poaSheetIdCache = null;
-var isPoaSheetReadyCache = false;
-var poaDataCache = null;
-var lastPoaCacheTime = 0;
-var POA_CACHE_TTL_MS = 15e3;
-function invalidatePoaCache() {
-  poaDataCache = null;
-  lastPoaCacheTime = 0;
-}
-async function getPoaSheetId() {
-  if (poaSheetIdCache !== null) return poaSheetIdCache;
-  const sheets = getClient2();
-  const spreadsheet = await sheets.spreadsheets.get({
-    spreadsheetId: env.googleSpreadsheetId
-  });
-  const sheet = spreadsheet.data.sheets?.find(
-    (s) => s.properties?.title === POA_SHEET_NAME
-  );
-  if (!sheet?.properties && sheet?.properties?.sheetId === void 0) {
-    throw new Error(`Sheet tab "${POA_SHEET_NAME}" not found.`);
-  }
-  poaSheetIdCache = sheet.properties.sheetId;
-  return poaSheetIdCache;
-}
-async function ensurePoaSheetReady() {
-  if (isPoaSheetReadyCache) return;
-  try {
-    const sheets = getClient2();
-    const spreadsheet = await sheets.spreadsheets.get({
-      spreadsheetId: env.googleSpreadsheetId
-    });
-    const existing = spreadsheet.data.sheets?.find(
-      (s) => s.properties?.title === POA_SHEET_NAME
-    );
-    if (!existing) {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId: env.googleSpreadsheetId,
-        requestBody: {
-          requests: [{ addSheet: { properties: { title: POA_SHEET_NAME } } }]
-        }
-      });
-      poaSheetIdCache = null;
-      logger.info(`Created sheet tab "${POA_SHEET_NAME}"`);
-    }
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: env.googleSpreadsheetId,
-      range: `${POA_SHEET_NAME}!A1:${COL_LAST}1`,
-      valueInputOption: "RAW",
-      requestBody: { values: [[...POA_SHEET_COLUMNS]] }
-    });
-    isPoaSheetReadyCache = true;
-  } catch (err) {
-    isPoaSheetReadyCache = false;
-    logger.warn({ err }, "ensurePoaSheetReady non-fatal warning");
-  }
-}
-async function listPoaRows(forceRefresh = false) {
-  const now = Date.now();
-  if (!forceRefresh && poaDataCache !== null && now - lastPoaCacheTime < POA_CACHE_TTL_MS) {
-    return poaDataCache;
-  }
-  const sheets = getClient2();
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: env.googleSpreadsheetId,
-    range: `${POA_SHEET_NAME}!A2:${COL_LAST}`
-  });
-  const rows = response.data.values ?? [];
-  const result = rows.map((row, index) => ({ id: index + 2, values: row })).filter((row) => row.values.some((cell2) => cell2 !== void 0 && cell2 !== ""));
-  poaDataCache = result;
-  lastPoaCacheTime = now;
-  return result;
-}
-async function appendPoaRow(values) {
-  invalidatePoaCache();
-  const sheets = getClient2();
-  const response = await sheets.spreadsheets.values.append({
-    spreadsheetId: env.googleSpreadsheetId,
-    range: `${POA_SHEET_NAME}!A:${COL_LAST}`,
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: { values: [values] }
-  });
-  const updatedRange = response.data.updates?.updatedRange;
-  const match = updatedRange?.match(/![A-Z]+(\d+):/);
-  if (match) return Number(match[1]);
-  const rows = await listPoaRows(true);
-  const last = rows[rows.length - 1];
-  if (!last) throw new Error("Failed to determine id of newly created POA row.");
-  return last.id;
-}
-async function updatePoaRow(id, values) {
-  invalidatePoaCache();
-  const sheets = getClient2();
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: env.googleSpreadsheetId,
-    range: `${POA_SHEET_NAME}!A${id}:${COL_LAST}${id}`,
-    valueInputOption: "RAW",
-    requestBody: { values: [values] }
-  });
-}
-async function deletePoaRow(id) {
-  invalidatePoaCache();
-  const sheets = getClient2();
-  const sheetId = await getPoaSheetId();
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId: env.googleSpreadsheetId,
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId,
-              dimension: "ROWS",
-              startIndex: id - 1,
-              endIndex: id
-            }
-          }
-        }
-      ]
-    }
-  });
-}
-
-// src/routes/poa.ts
 var router9 = (0, import_express9.Router)();
 function rowToRecord(values) {
   return {

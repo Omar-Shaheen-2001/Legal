@@ -45,9 +45,13 @@ router.get("/sessions", attachAuthUser, requireAuth, async (req, res) => {
     const sessions = await listSessions(parseResult.data.status);
     const data = ListSessionsResponse.parse(sessions);
     res.json(data);
-  } catch (err) {
+  } catch (err: any) {
     logger.error({ err }, "Failed to list sessions");
-    res.status(500).json({ error: "Failed to load sessions." });
+    const isClockError = String(err?.message || "").includes("invalid_grant") || String(err?.stack || "").includes("invalid_grant");
+    const errorMsg = isClockError
+      ? "فشل الاتصال بـ Google Sheets بسبب عدم تزامن تاريخ وتوقيت الجهاز مع سيرفرات Google (invalid_grant)."
+      : "فشل تحميل قائمة الجلسات.";
+    res.status(500).json({ error: errorMsg });
   }
 });
 

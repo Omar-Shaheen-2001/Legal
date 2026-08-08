@@ -19,9 +19,13 @@ router.get("/dashboard/stats", attachAuthUser, requireAuth, async (_req, res) =>
     const stats = await getDashboardStats();
     const data = GetDashboardStatsResponse.parse(stats);
     res.json(data);
-  } catch (err) {
+  } catch (err: any) {
     logger.error({ err }, "Failed to load dashboard stats");
-    res.status(500).json({ error: "Failed to load dashboard stats." });
+    const isClockError = String(err?.message || "").includes("invalid_grant") || String(err?.stack || "").includes("invalid_grant");
+    const errorMsg = isClockError
+      ? "فشل الاتصال بـ Google Sheets بسبب عدم تزامن تاريخ وتوقيت الجهاز مع سيرفرات Google (invalid_grant)."
+      : "فشل تحميل إحصائيات لوحة التحكم.";
+    res.status(500).json({ error: errorMsg });
   }
 });
 

@@ -121,19 +121,26 @@ export async function listPoaRows(forceRefresh = false): Promise<{ id: number; v
     return poaDataCache;
   }
 
-  const sheets = getClient();
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: env.googleSpreadsheetId,
-    range: `${POA_SHEET_NAME}!A2:${COL_LAST}`,
-  });
-  const rows = response.data.values ?? [];
-  const result = rows
-    .map((row, index) => ({ id: index + 2, values: row as PoaRow }))
-    .filter((row) => row.values.some((cell) => cell !== undefined && cell !== ""));
-  
-  poaDataCache = result;
-  lastPoaCacheTime = now;
-  return result;
+  await ensurePoaSheetReady();
+
+  try {
+    const sheets = getClient();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: env.googleSpreadsheetId,
+      range: `${POA_SHEET_NAME}!A2:${COL_LAST}`,
+    });
+    const rows = response.data.values ?? [];
+    const result = rows
+      .map((row, index) => ({ id: index + 2, values: row as PoaRow }))
+      .filter((row) => row.values.some((cell) => cell !== undefined && cell !== ""));
+    
+    poaDataCache = result;
+    lastPoaCacheTime = now;
+    return result;
+  } catch (err) {
+    logger.warn({ err }, "Failed to fetch POA rows from Google Sheets, returning cached/empty");
+    return poaDataCache ?? [];
+  }
 }
 
 /** Appends a new POA record row and returns its 1-based row id. */

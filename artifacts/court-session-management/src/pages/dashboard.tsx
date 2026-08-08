@@ -1,6 +1,6 @@
 import { useGetDashboardStats } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, Calendar, CheckCircle2, Clock, ArrowLeft, Sparkles } from 'lucide-react';
+import { Briefcase, Calendar, CheckCircle2, Clock, ArrowLeft, Sparkles, FileKey } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
 
@@ -14,6 +14,7 @@ const stats = [
     iconColor: 'text-emerald-700 dark:text-emerald-400',
     borderColor: 'border-emerald-600/20',
     dotColor: 'bg-emerald-600',
+    href: '/sessions',
   },
   {
     key: 'todayHearings',
@@ -24,6 +25,7 @@ const stats = [
     iconColor: 'text-amber-500',
     borderColor: 'border-amber-500/20',
     dotColor: 'bg-amber-500',
+    href: '/sessions',
   },
   {
     key: 'upcomingHearings',
@@ -34,6 +36,7 @@ const stats = [
     iconColor: 'text-emerald-500',
     borderColor: 'border-emerald-500/20',
     dotColor: 'bg-emerald-500',
+    href: '/sessions',
   },
   {
     key: 'finishedHearings',
@@ -44,6 +47,18 @@ const stats = [
     iconColor: 'text-purple-500',
     borderColor: 'border-purple-500/20',
     dotColor: 'bg-purple-500',
+    href: '/sessions',
+  },
+  {
+    key: 'totalPoas',
+    label: 'إجمالي الوكالات',
+    icon: FileKey,
+    gradient: 'from-blue-500/15 to-blue-600/5',
+    iconBg: 'bg-blue-500/15',
+    iconColor: 'text-blue-500',
+    borderColor: 'border-blue-500/20',
+    dotColor: 'bg-blue-500',
+    href: '/poa',
   },
 ] as const;
 
@@ -69,44 +84,47 @@ export default function DashboardPage() {
           <div className="w-1 h-6 rounded-full bg-primary" />
           <h1 className="text-2xl font-bold tracking-tight">لوحة التحكم</h1>
         </div>
-        <p className="text-muted-foreground text-sm mr-3">نظرة عامة على نشاط جلسات المحكمة</p>
+        <p className="text-muted-foreground text-sm mr-3">نظرة عامة على نشاط جلسات المحكمة والوكالات</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {stats.map((stat, i) => {
           const Icon = stat.icon;
           const value = data?.[stat.key];
 
           return (
-            <div
-              key={stat.key}
-              className={`fade-in-up fade-in-up-delay-${i + 1} rounded-xl border ${stat.borderColor} bg-gradient-to-br ${stat.gradient} p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
-                  <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+            <Link key={stat.key} href={stat.href}>
+              <div
+                className={`fade-in-up fade-in-up-delay-${i + 1} rounded-xl border ${stat.borderColor} bg-gradient-to-br ${stat.gradient} p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer h-full flex flex-col justify-between`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                    <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${stat.dotColor} mt-1`} />
                 </div>
-                <div className={`w-2 h-2 rounded-full ${stat.dotColor} mt-1`} />
+                <div>
+                  {isLoading ? (
+                    <Skeleton className="h-9 w-16 mb-1" />
+                  ) : (
+                    <div className="text-4xl font-bold font-mono tracking-tight" data-testid={`stat-${stat.key}`}>
+                      {value ?? 0}
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</p>
+                </div>
               </div>
-              {isLoading ? (
-                <Skeleton className="h-9 w-16 mb-1" />
-              ) : (
-                <div className="text-4xl font-bold font-mono tracking-tight" data-testid={`stat-${stat.key}`}>
-                  {value ?? 0}
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</p>
-            </div>
+            </Link>
           );
         })}
       </div>
 
       {/* Quick Actions */}
-      <div className="fade-in-up fade-in-up-delay-4 grid gap-4 sm:grid-cols-2">
+      <div className="fade-in-up fade-in-up-delay-4 grid gap-4 sm:grid-cols-3">
         <Link href="/chat">
           <div
-            className="group relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/8 to-primary/3 p-6 cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5"
+            className="group relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/8 to-primary/3 p-6 cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 h-full"
             data-testid="link-analyze-message"
           >
             <div className="flex items-start gap-4">
@@ -128,7 +146,7 @@ export default function DashboardPage() {
 
         <Link href="/sessions">
           <div
-            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 cursor-pointer transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5"
+            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 cursor-pointer transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 h-full"
             data-testid="link-view-sessions"
           >
             <div className="flex items-start gap-4">
@@ -139,6 +157,28 @@ export default function DashboardPage() {
                 <div className="font-semibold text-base mb-1">عرض جميع الجلسات</div>
                 <div className="text-sm text-muted-foreground leading-relaxed">
                   تصفّح وإدارة جلسات الاستماع المسجّلة
+                </div>
+              </div>
+            </div>
+            <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/poa">
+          <div
+            className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 cursor-pointer transition-all duration-200 hover:border-blue-500/30 hover:shadow-lg hover:-translate-y-0.5 h-full"
+            data-testid="link-view-poa"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition-colors">
+                <FileKey className="w-6 h-6 text-blue-500 transition-colors" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-base mb-1">إدارة الوكالات الشرعية</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  متابعة الوكالات وصلاحياتها وتواريخ الانتهاء
                 </div>
               </div>
             </div>

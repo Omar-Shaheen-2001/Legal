@@ -49,19 +49,29 @@ const LOCAL_SETTINGS_PATH = resolve(process.cwd(), "settings.json");
 const ALT_SETTINGS_PATH = resolve(process.cwd(), "artifacts", "api-server", "settings.json");
 
 function loadFromDisk(): AppSettings {
-  const pathsToTry = [TMP_SETTINGS_PATH, LOCAL_SETTINGS_PATH, ALT_SETTINGS_PATH];
+  const pathsToTry = [
+    LOCAL_SETTINGS_PATH,
+    ALT_SETTINGS_PATH,
+    resolve(__dirname, "..", "..", "settings.json"),
+    resolve(__dirname, "..", "..", "..", "settings.json"),
+    TMP_SETTINGS_PATH,
+  ];
+  let result: AppSettings = {};
   for (const p of pathsToTry) {
     try {
       if (existsSync(p)) {
         const raw = readFileSync(p, "utf-8");
         const parsed = JSON.parse(raw) as AppSettings;
-        return parsed;
+        if (parsed && typeof parsed === "object") {
+          // Merge so any non-empty setting from any path is preserved
+          result = { ...parsed, ...result };
+        }
       }
     } catch {
       // ignore & try next path
     }
   }
-  return {};
+  return result;
 }
 
 function saveToDisk(settings: AppSettings): void {

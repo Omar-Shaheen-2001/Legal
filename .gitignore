@@ -50,6 +50,7 @@ Thumbs.db
 
 # Secrets and local runtime settings
 service-account.json
+settings.json
 artifacts/api-server/settings.json
 *.env
 *.pem

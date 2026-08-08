@@ -12,6 +12,7 @@ import {
 import { computeHearingDateTime, parseHijriDateString, hijriToGregorian } from "../utils/hijri";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
+import { listPoaRows } from "./poa.sheets.service";
 
 const COLUMN_INDEX: Record<string, number> = {
   // Arabic headers
@@ -331,10 +332,25 @@ export interface DashboardStats {
   todayHearings: number;
   upcomingHearings: number;
   finishedHearings: number;
+  totalPoas: number;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const sessions = await listSessions();
+  const [sessionsRes, poaRes] = await Promise.allSettled([
+    listSessions(),
+    listPoaRows(),
+  ]);
+
+  const sessions = sessionsRes.status === "fulfilled" ? sessionsRes.value : [];
+  const poaRows = poaRes.status === "fulfilled" ? poaRes.value : [];
+
+  if (sessionsRes.status === "rejected") {
+    logger.warn({ err: sessionsRes.reason }, "Failed to load sessions for dashboard stats");
+  }
+  if (poaRes.status === "rejected") {
+    logger.warn({ err: poaRes.reason }, "Failed to load POA rows for dashboard stats");
+  }
+
   let todayHearings = 0;
   let upcomingHearings = 0;
   let finishedHearings = 0;
@@ -349,6 +365,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     todayHearings,
     upcomingHearings,
     finishedHearings,
+    totalPoas: poaRows.length,
   };
 }
 
