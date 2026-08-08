@@ -8,6 +8,7 @@ import {
   updatePoaRow,
   deletePoaRow,
 } from "../services/poa.sheets.service";
+import moment from "moment-hijri";
 
 const router: IRouter = Router();
 
@@ -21,13 +22,45 @@ interface PoaRecord {
   createdAt: string;
 }
 
+/**
+ * Calculates days remaining from a Hijri date string (DD/MM/YYYY or YYYY/MM/DD).
+ * Returns 0 if the string is empty or cannot be parsed.
+ */
+function calcDaysFromHijri(hijriDateStr: string): number {
+  if (!hijriDateStr?.trim()) return 0;
+  try {
+    const parts = hijriDateStr.trim().split(/[\/\.-]/);
+    if (parts.length === 3) {
+      let day: number, month: number, year: number;
+      if (parts[0].length === 4) {
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        day = parseInt(parts[2], 10);
+      } else {
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        year = parseInt(parts[2], 10);
+      }
+      if (year > 1300 && year < 1600 && month >= 1 && month <= 12 && day >= 1 && day <= 30) {
+        const mExpiry = moment(`${year}/${month}/${day}`, "iYYYY/iM/iD");
+        if (mExpiry.isValid()) {
+          return mExpiry.diff(moment().startOf("day"), "days");
+        }
+      }
+    }
+  } catch (_) {}
+  return 0;
+}
+
 function rowToRecord(values: string[]): PoaRecord {
   return {
     clientName: values[0] || "",
     poaNumber: values[1] || "",
     issueDateHijri: values[2] || "",
     expiryDateHijri: values[3] || "",
-    daysRemaining: Number(values[4]) || 0,
+    daysRemaining: values[4] && values[4].trim() !== ""
+      ? Number(values[4])
+      : calcDaysFromHijri(values[3] || ""),
     notes: values[5] || "",
     createdAt: values[6] || new Date().toISOString(),
   };
