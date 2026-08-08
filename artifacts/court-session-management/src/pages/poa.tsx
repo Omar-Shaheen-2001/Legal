@@ -13,6 +13,16 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface PowerOfAttorney {
@@ -79,6 +89,7 @@ export default function PowerOfAttorneyPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<PowerOfAttorney | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PowerOfAttorney | null>(null);
 
   // Form State
   const [clientName, setClientName] = useState('');
@@ -247,7 +258,10 @@ export default function PowerOfAttorneyPage() {
     }
   };
 
-  const handleDelete = async (record: PowerOfAttorney) => {
+  const handleDeleteConfirmed = async () => {
+    const record = deleteTarget;
+    setDeleteTarget(null);
+    if (!record) return;
     try {
       if (record.sheetRowId) {
         const res = await fetch(`/api/poa/${record.sheetRowId}`, {
@@ -481,7 +495,7 @@ export default function PowerOfAttorneyPage() {
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(record)}
+                      onClick={() => setDeleteTarget(record)}
                       className="p-1.5 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-colors"
                       title="حذف"
                     >
@@ -549,6 +563,37 @@ export default function PowerOfAttorneyPage() {
           </Button>
         </div>
       )}
+
+      {/* ── Delete Confirmation Dialog ───────────────────────────────────── */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent dir="rtl" className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-rose-500">
+              <Trash2 className="w-5 h-5" />
+              تأكيد حذف الوكالة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed">
+              هل أنت متأكد من حذف وكالة{' '}
+              <span className="font-bold text-foreground">{deleteTarget?.clientName}</span>
+              {deleteTarget?.poaNumber ? (
+                <> — رقم <span className="font-mono text-foreground">{deleteTarget.poaNumber}</span></>
+              ) : null}
+              ؟
+              <br />
+              <span className="text-rose-500 font-medium">لا يمكن التراجع عن هذا الإجراء.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirmed}
+              className="bg-rose-600 hover:bg-rose-700 text-white focus:ring-rose-600"
+            >
+              نعم، احذف الوكالة
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
