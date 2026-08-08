@@ -7,6 +7,7 @@ import sessionsRouter from "./sessions";
 import settingsRouter from "./settings";
 import reportsRouter from "./reports";
 import cronRouter from "./cron";
+import poaRouter from "./poa";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(sessionsRouter);
 router.use(settingsRouter);
 router.use(reportsRouter);
 router.use(cronRouter);
+router.use(poaRouter);
 
 export default router;

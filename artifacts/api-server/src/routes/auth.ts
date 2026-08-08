@@ -8,10 +8,11 @@ import {
   requireAuth,
   setSessionCookie,
 } from "../middlewares/auth.middleware";
+import { loginRateLimiter } from "../middlewares/rate-limiter.middleware";
 
 const router: IRouter = Router();
 
-router.post("/auth/login", attachAuthUser, (req, res) => {
+router.post("/auth/login", loginRateLimiter, attachAuthUser, (req, res) => {
   if (!isAuthConfigured()) {
     res.status(500).json({
       error: "Login is not configured yet. Set APP_USERNAME and APP_PASSWORD.",

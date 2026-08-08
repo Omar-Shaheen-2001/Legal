@@ -86,8 +86,11 @@ async function getSheetId(): Promise<number> {
   return sheetIdCache;
 }
 
+let sheetReadyCache = false;
+
 /** Ensures the target sheet tab exists with the expected header row. Safe to call repeatedly. */
 export async function ensureSheetReady(): Promise<void> {
+  if (sheetReadyCache) return;
   try {
     const sheets = getClient();
     const spreadsheet = await sheets.spreadsheets.get({
@@ -107,19 +110,15 @@ export async function ensureSheetReady(): Promise<void> {
       sheetIdCache = null;
     }
 
-    const headerResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: env.googleSpreadsheetId,
-      range: `${env.googleSheetName}!A1:Z1`,
-    });
-    const currentHeader = headerResponse.data.values?.[0];
-
     await sheets.spreadsheets.values.update({
       spreadsheetId: env.googleSpreadsheetId,
       range: headerRange(),
       valueInputOption: "RAW",
       requestBody: { values: [[...SHEET_COLUMNS]] },
     });
+    sheetReadyCache = true;
   } catch (err) {
+    sheetReadyCache = false;
     logger.warn({ err }, "ensureSheetReady non-fatal warning");
   }
 }

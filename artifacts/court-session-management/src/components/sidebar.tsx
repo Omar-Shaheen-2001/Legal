@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, MessageSquare, Calendar, Moon, Sun, LogOut, Settings, Scale, FileText } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Calendar, Moon, Sun, LogOut, Settings, Scale, FileText, ShieldCheck } from 'lucide-react';
 import { useTheme } from './theme-provider';
 import { useLogout } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ const navigation = [
   { name: 'تحليل رسالة', path: '/chat', icon: MessageSquare },
   { name: 'جميع الجلسات', path: '/sessions', icon: Calendar },
   { name: 'تقارير الجلسات', path: '/reports', icon: FileText },
+  { name: 'الوكالات', path: '/poa', icon: ShieldCheck },
   { name: 'الإعدادات', path: '/settings', icon: Settings },
 ];
 

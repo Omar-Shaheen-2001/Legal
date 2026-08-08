@@ -13,7 +13,7 @@ export function setSessionCookie(res: Response, username: string): void {
   const payload: SessionCookiePayload = { username, issuedAt: Date.now() };
   res.cookie(SESSION_COOKIE_NAME, JSON.stringify(payload), {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: env.isProduction,
     signed: true,
     maxAge: SESSION_MAX_AGE_MS,

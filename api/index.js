@@ -20702,27 +20702,27 @@ var require_router = __commonJS({
     var slice2 = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router10;
+    module2.exports = Router11;
     module2.exports.Route = Route;
-    function Router10(options) {
-      if (!(this instanceof Router10)) {
-        return new Router10(options);
+    function Router11(options) {
+      if (!(this instanceof Router11)) {
+        return new Router11(options);
       }
       const opts = options || {};
-      function router10(req, res, next) {
-        router10.handle(req, res, next);
+      function router11(req, res, next) {
+        router11.handle(req, res, next);
       }
-      Object.setPrototypeOf(router10, this);
-      router10.caseSensitive = opts.caseSensitive;
-      router10.mergeParams = opts.mergeParams;
-      router10.params = {};
-      router10.strict = opts.strict;
-      router10.stack = [];
-      return router10;
+      Object.setPrototypeOf(router11, this);
+      router11.caseSensitive = opts.caseSensitive;
+      router11.mergeParams = opts.mergeParams;
+      router11.params = {};
+      router11.strict = opts.strict;
+      router11.stack = [];
+      return router11;
     }
-    Router10.prototype = function() {
+    Router11.prototype = function() {
     };
-    Router10.prototype.param = function param(name, fn) {
+    Router11.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20742,7 +20742,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router10.prototype.handle = function handle(req, res, callback) {
+    Router11.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20869,7 +20869,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router10.prototype.use = function use(handler2) {
+    Router11.prototype.use = function use(handler2) {
       let offset = 0;
       let path3 = "/";
       if (typeof handler2 !== "function") {
@@ -20902,7 +20902,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router10.prototype.route = function route(path3) {
+    Router11.prototype.route = function route(path3) {
       const route2 = new Route(path3);
       const layer = new Layer(path3, {
         sensitive: this.caseSensitive,
@@ -20917,7 +20917,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router10.prototype[method] = function(path3) {
+      Router11.prototype[method] = function(path3) {
         const route = this.route(path3);
         route[method].apply(route, slice2.call(arguments, 1));
         return this;
@@ -21100,13 +21100,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve3 = require("node:path").resolve;
     var once = require_once();
-    var Router10 = require_router();
+    var Router11 = require_router();
     var slice2 = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router10 = null;
+      var router11 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21115,13 +21115,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router10 === null) {
-            router10 = new Router10({
+          if (router11 === null) {
+            router11 = new Router11({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router10;
+          return router11;
         }
       });
     };
@@ -21192,15 +21192,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router10 = this.router;
+      var router11 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router10.use(path3, fn2);
+          return router11.use(path3, fn2);
         }
         debug(".use app under %s", path3);
         fn2.mountpath = path3;
         fn2.parent = this;
-        router10.use(path3, function mounted_app(req, res, next) {
+        router11.use(path3, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23785,7 +23785,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router10 = require_router();
+    var Router11 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23807,8 +23807,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router10.Route;
-    exports2.Router = Router10;
+    exports2.Route = Router11.Route;
+    exports2.Router = Router11;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -35316,7 +35316,7 @@ __export(vercelHandler_exports, {
 module.exports = __toCommonJS(vercelHandler_exports);
 
 // src/app.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express11 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_cookie_parser = __toESM(require_cookie_parser(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
@@ -35325,7 +35325,7 @@ var import_fs2 = __toESM(require("fs"), 1);
 var import_url2 = require("url");
 
 // src/routes/index.ts
-var import_express9 = __toESM(require_express2(), 1);
+var import_express10 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -39608,7 +39608,7 @@ function setSessionCookie(res, username) {
   const payload = { username, issuedAt: Date.now() };
   res.cookie(SESSION_COOKIE_NAME, JSON.stringify(payload), {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: env.isProduction,
     signed: true,
     maxAge: SESSION_MAX_AGE_MS,
@@ -39651,9 +39651,45 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// src/middlewares/rate-limiter.middleware.ts
+var ipMap = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of ipMap.entries()) {
+    if (now > record.resetTime) {
+      ipMap.delete(ip);
+    }
+  }
+}, 10 * 60 * 1e3);
+function createRateLimiter(options) {
+  const { windowMs, max, message = "\u062A\u0645 \u062A\u062C\u0627\u0648\u0632 \u0639\u062F\u062F \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0627\u062A \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0628\u0647\u0627. \u064A\u0631\u062C\u0649 \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631 \u0648\u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0644\u0627\u062D\u0642\u0627\u064B." } = options;
+  return function rateLimiter(req, res, next) {
+    const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "unknown";
+    const now = Date.now();
+    const record = ipMap.get(clientIp);
+    if (!record || now > record.resetTime) {
+      ipMap.set(clientIp, { count: 1, resetTime: now + windowMs });
+      return next();
+    }
+    record.count += 1;
+    if (record.count > max) {
+      const retryAfterSeconds = Math.ceil((record.resetTime - now) / 1e3);
+      res.setHeader("Retry-After", String(retryAfterSeconds));
+      res.status(429).json({ error: message, retryAfterSeconds });
+      return;
+    }
+    next();
+  };
+}
+var loginRateLimiter = createRateLimiter({
+  windowMs: 3 * 60 * 1e3,
+  max: 5,
+  message: "\u062A\u0645 \u062A\u062C\u0627\u0648\u0632 \u0639\u062F\u062F \u0645\u062D\u0627\u0648\u0644\u0627\u062A \u0627\u0644\u062F\u062E\u0648\u0644 \u0627\u0644\u062E\u0627\u0637\u0626\u0629. \u064A\u0631\u062C\u0649 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0628\u0639\u062F 3 \u062F\u0642\u0627\u0626\u0642."
+});
+
 // src/routes/auth.ts
 var router2 = (0, import_express2.Router)();
-router2.post("/auth/login", attachAuthUser, (req, res) => {
+router2.post("/auth/login", loginRateLimiter, attachAuthUser, (req, res) => {
   if (!isAuthConfigured()) {
     res.status(500).json({
       error: "Login is not configured yet. Set APP_USERNAME and APP_PASSWORD."
@@ -39755,7 +39791,9 @@ async function getSheetId() {
   sheetIdCache = sheet.properties.sheetId;
   return sheetIdCache;
 }
+var sheetReadyCache = false;
 async function ensureSheetReady() {
+  if (sheetReadyCache) return;
   try {
     const sheets = getClient();
     const spreadsheet = await sheets.spreadsheets.get({
@@ -39773,18 +39811,15 @@ async function ensureSheetReady() {
       });
       sheetIdCache = null;
     }
-    const headerResponse = await sheets.spreadsheets.values.get({
-      spreadsheetId: env.googleSpreadsheetId,
-      range: `${env.googleSheetName}!A1:Z1`
-    });
-    const currentHeader = headerResponse.data.values?.[0];
     await sheets.spreadsheets.values.update({
       spreadsheetId: env.googleSpreadsheetId,
       range: headerRange(),
       valueInputOption: "RAW",
       requestBody: { values: [[...SHEET_COLUMNS]] }
     });
+    sheetReadyCache = true;
   } catch (err) {
+    sheetReadyCache = false;
     logger.warn({ err }, "ensureSheetReady non-fatal warning");
   }
 }
@@ -57177,23 +57212,297 @@ router8.get("/cron/reminders", async (req, res) => {
 });
 var cron_default = router8;
 
-// src/routes/index.ts
+// src/routes/poa.ts
+var import_express9 = __toESM(require_express2(), 1);
+
+// src/services/poa.sheets.service.ts
+var import_googleapis2 = require("googleapis");
+var POA_SHEET_NAME = "Attorney";
+var POA_SHEET_COLUMNS = [
+  "\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064A\u0644",
+  "\u0631\u0642\u0645 \u0627\u0644\u0648\u0643\u0627\u0644\u0629",
+  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0635\u062F\u0627\u0631 \u0647\u062C\u0631\u064A",
+  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0627\u0646\u062A\u0647\u0627\u0621 \u0647\u062C\u0631\u064A",
+  "\u0627\u0644\u0623\u064A\u0627\u0645 \u0627\u0644\u0645\u062A\u0628\u0642\u064A\u0629",
+  "\u0645\u0644\u0627\u062D\u0638\u0627\u062A",
+  "\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0646\u0634\u0627\u0621"
+];
+var POA_COLS = POA_SHEET_COLUMNS.length;
+var COL_LAST = String.fromCharCode("A".charCodeAt(0) + POA_COLS - 1);
+var sheetsClient2 = null;
+function getClient2() {
+  if (!sheetsClient2) {
+    const credentials = env.googleServiceAccountJson;
+    if (!credentials.client_email || !credentials.private_key) {
+      throw new Error(
+        "GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email/private_key."
+      );
+    }
+    const privateKey = credentials.private_key.replace(/\\n/g, "\n");
+    const auth = new import_googleapis2.google.auth.JWT({
+      email: credentials.client_email,
+      key: privateKey,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
+    sheetsClient2 = import_googleapis2.google.sheets({ version: "v4", auth });
+  }
+  return sheetsClient2;
+}
+var poaSheetIdCache = null;
+var isPoaSheetReadyCache = false;
+var poaDataCache = null;
+var lastPoaCacheTime = 0;
+var POA_CACHE_TTL_MS = 15e3;
+function invalidatePoaCache() {
+  poaDataCache = null;
+  lastPoaCacheTime = 0;
+}
+async function getPoaSheetId() {
+  if (poaSheetIdCache !== null) return poaSheetIdCache;
+  const sheets = getClient2();
+  const spreadsheet = await sheets.spreadsheets.get({
+    spreadsheetId: env.googleSpreadsheetId
+  });
+  const sheet = spreadsheet.data.sheets?.find(
+    (s) => s.properties?.title === POA_SHEET_NAME
+  );
+  if (!sheet?.properties && sheet?.properties?.sheetId === void 0) {
+    throw new Error(`Sheet tab "${POA_SHEET_NAME}" not found.`);
+  }
+  poaSheetIdCache = sheet.properties.sheetId;
+  return poaSheetIdCache;
+}
+async function ensurePoaSheetReady() {
+  if (isPoaSheetReadyCache) return;
+  try {
+    const sheets = getClient2();
+    const spreadsheet = await sheets.spreadsheets.get({
+      spreadsheetId: env.googleSpreadsheetId
+    });
+    const existing = spreadsheet.data.sheets?.find(
+      (s) => s.properties?.title === POA_SHEET_NAME
+    );
+    if (!existing) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: env.googleSpreadsheetId,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: POA_SHEET_NAME } } }]
+        }
+      });
+      poaSheetIdCache = null;
+      logger.info(`Created sheet tab "${POA_SHEET_NAME}"`);
+    }
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: env.googleSpreadsheetId,
+      range: `${POA_SHEET_NAME}!A1:${COL_LAST}1`,
+      valueInputOption: "RAW",
+      requestBody: { values: [[...POA_SHEET_COLUMNS]] }
+    });
+    isPoaSheetReadyCache = true;
+  } catch (err) {
+    isPoaSheetReadyCache = false;
+    logger.warn({ err }, "ensurePoaSheetReady non-fatal warning");
+  }
+}
+async function listPoaRows(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && poaDataCache !== null && now - lastPoaCacheTime < POA_CACHE_TTL_MS) {
+    return poaDataCache;
+  }
+  const sheets = getClient2();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: env.googleSpreadsheetId,
+    range: `${POA_SHEET_NAME}!A2:${COL_LAST}`
+  });
+  const rows = response.data.values ?? [];
+  const result = rows.map((row, index) => ({ id: index + 2, values: row })).filter((row) => row.values.some((cell2) => cell2 !== void 0 && cell2 !== ""));
+  poaDataCache = result;
+  lastPoaCacheTime = now;
+  return result;
+}
+async function appendPoaRow(values) {
+  invalidatePoaCache();
+  const sheets = getClient2();
+  const response = await sheets.spreadsheets.values.append({
+    spreadsheetId: env.googleSpreadsheetId,
+    range: `${POA_SHEET_NAME}!A:${COL_LAST}`,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: [values] }
+  });
+  const updatedRange = response.data.updates?.updatedRange;
+  const match = updatedRange?.match(/![A-Z]+(\d+):/);
+  if (match) return Number(match[1]);
+  const rows = await listPoaRows(true);
+  const last = rows[rows.length - 1];
+  if (!last) throw new Error("Failed to determine id of newly created POA row.");
+  return last.id;
+}
+async function updatePoaRow(id, values) {
+  invalidatePoaCache();
+  const sheets = getClient2();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: env.googleSpreadsheetId,
+    range: `${POA_SHEET_NAME}!A${id}:${COL_LAST}${id}`,
+    valueInputOption: "RAW",
+    requestBody: { values: [values] }
+  });
+}
+async function deletePoaRow(id) {
+  invalidatePoaCache();
+  const sheets = getClient2();
+  const sheetId = await getPoaSheetId();
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: env.googleSpreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: id - 1,
+              endIndex: id
+            }
+          }
+        }
+      ]
+    }
+  });
+}
+
+// src/routes/poa.ts
 var router9 = (0, import_express9.Router)();
-router9.use(health_default);
-router9.use(auth_default);
-router9.use(dashboard_default);
-router9.use(ai_default);
-router9.use(sessions_default);
-router9.use(settings_default);
-router9.use(reports_default);
-router9.use(cron_default);
-var routes_default = router9;
+function rowToRecord(values) {
+  return {
+    clientName: values[0] || "",
+    poaNumber: values[1] || "",
+    issueDateHijri: values[2] || "",
+    expiryDateHijri: values[3] || "",
+    daysRemaining: Number(values[4]) || 0,
+    notes: values[5] || "",
+    createdAt: values[6] || (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function recordToRow(record) {
+  return [
+    record.clientName,
+    record.poaNumber,
+    record.issueDateHijri,
+    record.expiryDateHijri,
+    String(record.daysRemaining ?? 0),
+    record.notes || "",
+    record.createdAt || (/* @__PURE__ */ new Date()).toISOString()
+  ];
+}
+router9.get("/poa", attachAuthUser, requireAuth, async (req, res) => {
+  try {
+    await ensurePoaSheetReady();
+    const forceRefresh = req.query.refresh === "true";
+    const rows = await listPoaRows(forceRefresh);
+    const records = rows.map(({ id, values }) => ({
+      ...rowToRecord(values),
+      sheetRowId: id
+    }));
+    res.json(records);
+  } catch (err) {
+    logger.error({ err }, "Failed to list POA records");
+    res.status(500).json({ error: "\u0641\u0634\u0644 \u062A\u062D\u0645\u064A\u0644 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0648\u0643\u0627\u0644\u0627\u062A." });
+  }
+});
+router9.post("/poa", attachAuthUser, requireAuth, async (req, res) => {
+  const body = req.body;
+  if (!body.clientName?.trim() || !body.poaNumber?.trim()) {
+    res.status(400).json({ error: "\u0627\u0633\u0645 \u0627\u0644\u0639\u0645\u064A\u0644 \u0648\u0631\u0642\u0645 \u0627\u0644\u0648\u0643\u0627\u0644\u0629 \u0645\u0637\u0644\u0648\u0628\u0627\u0646." });
+    return;
+  }
+  try {
+    await ensurePoaSheetReady();
+    const record = {
+      clientName: body.clientName.trim(),
+      poaNumber: body.poaNumber.trim(),
+      issueDateHijri: body.issueDateHijri?.trim() || "",
+      expiryDateHijri: body.expiryDateHijri?.trim() || "",
+      daysRemaining: Number(body.daysRemaining) || 0,
+      notes: body.notes?.trim() || "",
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    await appendPoaRow(recordToRow(record));
+    logger.info("POA record created");
+    res.status(201).json(record);
+  } catch (err) {
+    logger.error({ err }, "Failed to create POA record");
+    res.status(500).json({ error: "\u0641\u0634\u0644 \u062D\u0641\u0638 \u0627\u0644\u0648\u0643\u0627\u0644\u0629." });
+  }
+});
+router9.put("/poa/:rowId", attachAuthUser, requireAuth, async (req, res) => {
+  const rowId = parseInt(String(req.params.rowId), 10);
+  if (isNaN(rowId)) {
+    res.status(400).json({ error: "\u0645\u0639\u0631\u0641 \u0627\u0644\u0635\u0641 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D." });
+    return;
+  }
+  const body = req.body;
+  try {
+    await ensurePoaSheetReady();
+    const rows = await listPoaRows();
+    const existing = rows.find((r) => r.id === rowId);
+    if (!existing) {
+      res.status(404).json({ error: "\u0627\u0644\u0648\u0643\u0627\u0644\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629." });
+      return;
+    }
+    const existingRecord = rowToRecord(existing.values);
+    const updated = {
+      ...existingRecord,
+      clientName: body.clientName?.trim() || existingRecord.clientName,
+      poaNumber: body.poaNumber?.trim() || existingRecord.poaNumber,
+      issueDateHijri: body.issueDateHijri?.trim() ?? existingRecord.issueDateHijri,
+      expiryDateHijri: body.expiryDateHijri?.trim() ?? existingRecord.expiryDateHijri,
+      daysRemaining: body.daysRemaining !== void 0 ? Number(body.daysRemaining) : existingRecord.daysRemaining,
+      notes: body.notes?.trim() ?? existingRecord.notes
+    };
+    await updatePoaRow(rowId, recordToRow(updated));
+    logger.info({ rowId }, "POA record updated");
+    res.json(updated);
+  } catch (err) {
+    logger.error({ err }, "Failed to update POA record");
+    res.status(500).json({ error: "\u0641\u0634\u0644 \u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0648\u0643\u0627\u0644\u0629." });
+  }
+});
+router9.delete("/poa/:rowId", attachAuthUser, requireAuth, async (req, res) => {
+  const rowId = parseInt(String(req.params.rowId), 10);
+  if (isNaN(rowId)) {
+    res.status(400).json({ error: "\u0645\u0639\u0631\u0641 \u0627\u0644\u0635\u0641 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D." });
+    return;
+  }
+  try {
+    await deletePoaRow(rowId);
+    logger.info({ rowId }, "POA record deleted");
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "Failed to delete POA record");
+    res.status(500).json({ error: "\u0641\u0634\u0644 \u062D\u0630\u0641 \u0627\u0644\u0648\u0643\u0627\u0644\u0629." });
+  }
+});
+var poa_default = router9;
+
+// src/routes/index.ts
+var router10 = (0, import_express10.Router)();
+router10.use(health_default);
+router10.use(auth_default);
+router10.use(dashboard_default);
+router10.use(ai_default);
+router10.use(sessions_default);
+router10.use(settings_default);
+router10.use(reports_default);
+router10.use(cron_default);
+router10.use(poa_default);
+var routes_default = router10;
 
 // src/app.ts
 var import_meta2 = {};
 var __filename = (0, import_url2.fileURLToPath)(import_meta2.url);
 var __dirname2 = import_path3.default.dirname(__filename);
-var app = (0, import_express10.default)();
+var app = (0, import_express11.default)();
 app.set("trust proxy", 1);
 var pinoHttpMiddleware = import_pino_http.default.default || import_pino_http.default;
 app.use(
@@ -57216,8 +57525,8 @@ app.use(
   })
 );
 app.use((0, import_cors.default)({ credentials: true, origin: true }));
-app.use(import_express10.default.json());
-app.use(import_express10.default.urlencoded({ extended: true }));
+app.use(import_express11.default.json());
+app.use(import_express11.default.urlencoded({ extended: true }));
 app.use((0, import_cookie_parser.default)(env.sessionSecret));
 app.use("/api", routes_default);
 var possibleDistPaths = [
@@ -57236,7 +57545,7 @@ var distPath = possibleDistPaths.find((p) => {
 });
 if (distPath) {
   logger.info(`[Server] Serving static frontend from: ${distPath}`);
-  app.use(import_express10.default.static(distPath));
+  app.use(import_express11.default.static(distPath));
   app.use((req, res, next) => {
     if (req.path.startsWith("/api")) return next();
     res.sendFile(import_path3.default.join(distPath, "index.html"));
